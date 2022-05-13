@@ -1,29 +1,15 @@
-use std::{io, thread, time::Duration};
-use tui::{
-    text::{Span, Text, Spans},
-    style::{Style, Modifier, Color},
-    backend::{Backend, CrosstermBackend},
-    layout::{Constraint, Direction, Layout, Alignment},
-    widgets::{Widget, Block, Borders, Paragraph},
-    Terminal,
-    Frame
-};
 use crossterm::{
-    event:: {
-        // self,
-        DisableMouseCapture,
-        EnableMouseCapture,
-        Event,
-        // KeyCode
+    event::{
+        read, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
     },
     execute,
-    terminal::{
-        enable_raw_mode,
-        disable_raw_mode,
-        EnterAlternateScreen,
-        LeaveAlternateScreen
-    }
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use std::collections::HashMap;
+use std::io;
+use trace::windows::{main_menu_window, practice_window, Window, WindowCommand};
+use tui::backend::Backend;
+use tui::{backend::CrosstermBackend, Terminal};
 
 fn main() -> Result<(), io::Error> {
     //Setup terminal
@@ -34,62 +20,57 @@ fn main() -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    terminal.draw(ui)?;
-
-    thread::sleep(Duration::from_millis(5000));
-
+    let mut window = Some(Window {
+        ui: main_menu_window,
+        commands: HashMap::from([
+            (
+                KeyCode::Char('e'),
+                WindowCommand::new_char_command('e', || None),
+            ),
+            (
+                KeyCode::Char('p'),
+                WindowCommand::new_char_command('p', create_practice_window),
+            ),
+        ]),
+    });
+    loop {
+        window = match window {
+            Some(ref current_window) => {
+                terminal.draw(&current_window.ui)?;
+                let user_input = read()?;
+                match user_input {
+                    Event::Key(event) => match current_window.commands.get(&event.code) {
+                        None => window,
+                        Some(command) => match (command.action)() {
+                            Some(new_window) => Some(new_window),
+                            None => None,
+                        },
+                    },
+                    Event::Mouse(_) => window,
+                    Event::Resize(_, _) => window,
+                }
+            }
+            None => None,
+        };
+        if let None = window {
+            break;
+        }
+    }
+    // thread::sleep(Duration::from_millis(5000));
     //Restore terminal
     disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
     terminal.show_cursor()?;
-
     Ok(())
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>) {
-    let game_title = "▀█▀ █▀█ ▄▀█ █▀▀ █▀▀\n░█░ █▀▄ █▀█ █▄▄ ██▄";
-    
-    let mut form_size = f.size();
-    form_size.x = form_size.width / 4;
-    form_size.y = form_size.height / 4;
-    form_size.width /= 2;
-    form_size.height /= 2;
-
-    let main_block = Block::default()
-        .borders(Borders::ALL);
-    f.render_widget(main_block, form_size);
-
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .vertical_margin(form_size.height/8)
-        .horizontal_margin(form_size.width/3)
-        .constraints([
-            Constraint::Percentage(33),
-            Constraint::Percentage(20),
-            Constraint::Percentage(20),
-            Constraint::Percentage(1)
-        ].as_ref())
-        .split(form_size);
-    let title = Paragraph::new(Text::styled(game_title, Style::default().add_modifier(Modifier::BOLD).fg(Color::Red)))
-        .alignment(Alignment::Center);
-    f.render_widget(title, chunks[0]);
-    
-    let practice_button = create_ui_button("P", "ractice");
-    f.render_widget(practice_button, chunks[1]);
-
-    let exit_button = create_ui_button("E", "xit");
-    f.render_widget(exit_button, chunks[2])
-}
-
-fn create_ui_button<'a>(activator: &'a str, rest: &'a str) -> Paragraph<'a> {
-    let button_text = vec![
-        Spans::from(vec![
-            Span::styled(activator, Style::default().add_modifier(Modifier::UNDERLINED|Modifier::BOLD).fg(Color::Yellow)),
-            Span::raw(rest)
-        ])
-    ];
-
-    Paragraph::new(button_text)
-        .alignment(Alignment::Center)
-        .block(Block::default().borders(Borders::ALL))
+fn create_practice_window<B: Backend>() -> Option<Window<B>> {
+    Some(Window {
+        ui: practice_window,
+        commands: HashMap::new(),
+    })
 }
