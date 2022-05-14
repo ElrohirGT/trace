@@ -1,18 +1,10 @@
 use crossterm::{
-    event::{
-        read, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers,
-    },
+    event::{read, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use std::collections::HashMap;
 use std::io;
-use trace::{
-    Window,
-    WindowCommand,
-    windows::{main_menu_window, practice_window}
-};
-use tui::backend::Backend;
+use trace::windows::create_main_menu_window;
 use tui::{backend::CrosstermBackend, Terminal};
 
 fn main() -> Result<(), io::Error> {
@@ -24,19 +16,7 @@ fn main() -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut window = Some(Window {
-        ui: main_menu_window,
-        commands: HashMap::from([
-            (
-                KeyCode::Char('e'),
-                WindowCommand::new_char_command('e', || None),
-            ),
-            (
-                KeyCode::Char('p'),
-                WindowCommand::new_char_command('p', create_practice_window),
-            ),
-        ]),
-    });
+    let mut window = create_main_menu_window();
     loop {
         window = match window {
             None => break,
@@ -63,11 +43,4 @@ fn main() -> Result<(), io::Error> {
     )?;
     terminal.show_cursor()?;
     Ok(())
-}
-
-fn create_practice_window<B: Backend>() -> Option<Window<B>> {
-    Some(Window {
-        ui: practice_window,
-        commands: HashMap::new(),
-    })
 }

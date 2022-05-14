@@ -1,3 +1,6 @@
+use crate::{Window, WindowCommand};
+use crossterm::event::KeyCode;
+use std::collections::HashMap;
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout},
@@ -43,9 +46,26 @@ pub fn main_menu_window<B: Backend>(f: &mut Frame<B>) {
     f.render_widget(practice_button, chunks[1]);
 
     let exit_button = create_ui_button("E", "xit");
-    f.render_widget(exit_button, chunks[2])
+    f.render_widget(exit_button, chunks[2]);
 }
 
+pub fn create_main_menu_window<B: Backend>() -> Option<Window<B>> {
+    Some(Window {
+        ui: main_menu_window,
+        commands: HashMap::from([
+            (
+                KeyCode::Char('e'),
+                WindowCommand::new_char_command('e', || None),
+            ),
+            (
+                KeyCode::Char('p'),
+                WindowCommand::new_char_command('p', create_practice_window),
+            ),
+        ]),
+    })
+}
+
+//TODO: Find a way to add state to the window
 pub fn practice_window<B: Backend>(f: &mut Frame<B>) {
     let title = Paragraph::new(Text::styled(
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris sed ipsum eu mauris eleifend ultrices nec sed leo. Nullam pharetra, mauris porta porta sollicitudin, metus est blandit enim, ut pulvinar arcu turpis id justo. Aliquam euismod nulla eget augue dignissim, non tempus nunc convallis. Phasellus ac dignissim dui. Aenean quis rhoncus elit, non vehicula elit. Pellentesque rhoncus malesuada malesuada. Maecenas sed diam enim. Aliquam scelerisque nisl eleifend ligula ornare, id laoreet velit ultrices. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Nulla tempor, purus sit amet lobortis finibus, lacus ante sagittis lacus, et sodales tellus felis vel quam. Praesent sapien magna, venenatis interdum convallis ac, pharetra ultrices lectus. ",
@@ -57,6 +77,18 @@ pub fn practice_window<B: Backend>(f: &mut Frame<B>) {
     .wrap(Wrap { trim: false });
 
     f.render_widget(title, f.size());
+}
+fn create_practice_window<B: Backend>() -> Option<Window<B>> {
+    Some(Window {
+        ui: practice_window,
+        commands: HashMap::from([(
+            KeyCode::Esc,
+            WindowCommand {
+                activator_key: KeyCode::Esc,
+                action: create_main_menu_window,
+            },
+        )]),
+    })
 }
 
 fn create_ui_button<'a>(activator: &'a str, rest: &'a str) -> Paragraph<'a> {
