@@ -7,7 +7,11 @@ use crossterm::{
 };
 use std::collections::HashMap;
 use std::io;
-use trace::windows::{main_menu_window, practice_window, Window, WindowCommand};
+use trace::{
+    Window,
+    WindowCommand,
+    windows::{main_menu_window, practice_window}
+};
 use tui::backend::Backend;
 use tui::{backend::CrosstermBackend, Terminal};
 
