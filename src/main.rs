@@ -39,26 +39,20 @@ fn main() -> Result<(), io::Error> {
     });
     loop {
         window = match window {
+            None => break,
             Some(ref current_window) => {
                 terminal.draw(&current_window.ui)?;
                 let user_input = read()?;
                 match user_input {
                     Event::Key(event) => match current_window.commands.get(&event.code) {
                         None => window,
-                        Some(command) => match (command.action)() {
-                            Some(new_window) => Some(new_window),
-                            None => None,
-                        },
+                        Some(command) => (command.action)()
                     },
                     Event::Mouse(_) => window,
                     Event::Resize(_, _) => window,
                 }
             }
-            None => None,
         };
-        if let None = window {
-            break;
-        }
     }
     //Restore terminal
     disable_raw_mode()?;
