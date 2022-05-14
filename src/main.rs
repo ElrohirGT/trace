@@ -56,7 +56,6 @@ fn main() -> Result<(), io::Error> {
             break;
         }
     }
-    // thread::sleep(Duration::from_millis(5000));
     //Restore terminal
     disable_raw_mode()?;
     execute!(

@@ -12,8 +12,7 @@ use tui::{
 
 pub struct WindowCommand<B: Backend> {
     pub activator_key: KeyCode,
-    // pub action: F
-    pub action: fn() -> Option<Window<B>>, // pub command: Box<dyn Fn() -> Option<Window<B>>>
+    pub action: fn() -> Option<Window<B>>,
 }
 
 impl<B: Backend> WindowCommand<B> {
@@ -73,12 +72,8 @@ pub fn main_menu_window<B: Backend>(f: &mut Frame<B>) {
 }
 
 pub fn practice_window<B: Backend>(f: &mut Frame<B>) {
-    // let chunks = Layout::default()
-    //     .direction(Direction::Vertical)
-    //     .constraints([Constraint::Percentage(100)].as_ref())
-    //     .split(f.size());
     let title = Paragraph::new(Text::styled(
-        "Texto de prueba!!!!!! Chucuchun chucuchun chucuchun",
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris sed ipsum eu mauris eleifend ultrices nec sed leo. Nullam pharetra, mauris porta porta sollicitudin, metus est blandit enim, ut pulvinar arcu turpis id justo. Aliquam euismod nulla eget augue dignissim, non tempus nunc convallis. Phasellus ac dignissim dui. Aenean quis rhoncus elit, non vehicula elit. Pellentesque rhoncus malesuada malesuada. Maecenas sed diam enim. Aliquam scelerisque nisl eleifend ligula ornare, id laoreet velit ultrices. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Nulla tempor, purus sit amet lobortis finibus, lacus ante sagittis lacus, et sodales tellus felis vel quam. Praesent sapien magna, venenatis interdum convallis ac, pharetra ultrices lectus. ",
         Style::default()
             .add_modifier(Modifier::BOLD)
             .fg(Color::Gray),
