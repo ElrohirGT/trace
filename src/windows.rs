@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use crate::{Window, WindowCommand, State, ParagraphChar};
+use crate::{Window, WindowCommand, State, ParagraphChar, CharStatus};
 use crossterm::event::KeyCode;
 use std::collections::HashMap;
 use tui::{
@@ -52,17 +52,29 @@ pub fn main_menu_window<B: Backend>(_: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> 
     })
 }
 
-pub fn create_main_menu_window<B: Backend>(_: &mut State) -> Option<Window<B>> {
+pub fn create_main_menu_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     Some(Window {
         ui: main_menu_window,
         commands: HashMap::from([
             (
                 KeyCode::Char('e'),
-                WindowCommand::new_char_command('e', |_| None),
+                WindowCommand::new_char_command('e', Box::new(|_| None)),
+            ),
+            (
+                KeyCode::Char('E'),
+                WindowCommand::new_char_command('E', Box::new(|_| None)),
+            ),
+            (
+                KeyCode::Esc,
+                WindowCommand{ activator_key: KeyCode::Esc, action: Box::new(|_| None)},
             ),
             (
                 KeyCode::Char('p'),
-                WindowCommand::new_char_command('p', create_empty_practice_window),
+                WindowCommand::new_char_command('p', Box::new(create_empty_practice_window)),
+            ),
+            (
+                KeyCode::Char('P'),
+                WindowCommand::new_char_command('P', Box::new(create_empty_practice_window)),
             ),
         ]),
     })
@@ -71,36 +83,132 @@ pub fn create_main_menu_window<B: Backend>(_: &mut State) -> Option<Window<B>> {
 pub fn practice_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
     Box::new(move |f| {
         let spans: Vec<Span> = state.chars.iter().map(|c| c.to_span()).collect();
+        let layout = Layout::default()
+            .vertical_margin(f.size().height/4)
+            .horizontal_margin(f.size().width/3)
+            .constraints([Constraint::Percentage(1)].as_ref())
+            .split(f.size());
+        
         let title = Paragraph::new(vec![Spans::from(spans)])
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: false });
 
-        f.render_widget(title, f.size());
+        f.render_widget(title, layout[0]);
     })
 }
-fn create_empty_practice_window<B: Backend>(state: &mut State) -> Option<Window<B>> {
+fn create_empty_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
+    state.index = 0;
+    state.error_count = 0;
     state.chars = get_random_practice_text();
     create_practice_window(state)
 }
 fn get_random_practice_text() -> Vec<ParagraphChar> {
     return vec![
-        ParagraphChar::Default('H'),
-        ParagraphChar::Default('e'),
-        ParagraphChar::Default('l'),
-        ParagraphChar::Default('l'),
-        ParagraphChar::Default('o'),
+        ParagraphChar::new('H', CharStatus::Default),
+        ParagraphChar::new('e', CharStatus::Default),
+        ParagraphChar::new('l', CharStatus::Default),
+        ParagraphChar::new('l', CharStatus::Default),
+        ParagraphChar::new('o', CharStatus::Default),
     ]
 }
-fn create_practice_window<B: Backend>(state: &mut State) -> Option<Window<B>> {
-    Some(Window {
-        ui: practice_window,
-        commands: HashMap::from([(
+fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
+    fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>>{
+        if state.index > 0 {//Removing the first 
+            state.index -= 1;
+        }
+        let current_char = &state.chars[state.index];
+        let defaulted_char = match current_char.status {
+            CharStatus::Correct => ParagraphChar::new(current_char.character, CharStatus::Default),
+            CharStatus::Wrong => {
+                state.error_count -= 1;
+                ParagraphChar::new(current_char.character, CharStatus::Default)
+            },
+            CharStatus::Default => ParagraphChar::new(current_char.character, CharStatus::Default)
+        };
+        state.chars[state.index] = defaulted_char;
+        create_practice_window(state)
+    }
+
+    fn handle_char_press<B: 'static + Backend>(pressed_character: char) -> Box<dyn Fn(&mut State)->Option<Window<B>>> {
+        Box::new(move |state| {
+            let end_of_paragraph = state.index == state.chars.len();
+            if !end_of_paragraph {
+                let current_char = &state.chars[state.index];
+                let is_correct = current_char.character == pressed_character;
+                let status = if is_correct {CharStatus::Correct} else {CharStatus::Wrong};
+    
+                if !is_correct {
+                    state.error_count += 1;
+                }
+    
+                let transformed_char = ParagraphChar::new(current_char.character, status);
+                state.chars[state.index] = transformed_char;
+                
+                let done = state.index == state.chars.len() - 1;
+                if done && state.error_count == 0 {
+                    return create_end_window(state);
+                }
+                state.index += 1;
+            }
+            return create_practice_window(state);
+        })
+    }
+
+    let mut commands = HashMap::from([
+        (
             KeyCode::Esc,
             WindowCommand {
                 activator_key: KeyCode::Esc,
-                action: create_main_menu_window,
-            },
-        )]),
+                action: Box::new(create_main_menu_window),
+            }
+        ),
+        (
+            KeyCode::Backspace,
+            WindowCommand {
+                activator_key: KeyCode::Backspace,
+                action: Box::new(handle_backspace_press)
+            }
+        ),
+    ]);
+    let chars = vec!['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'ñ', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+    for elem in chars {
+        commands.insert(KeyCode::Char(elem), WindowCommand{activator_key: KeyCode::Char(elem), action: handle_char_press(elem)});
+        let upper_case_char = elem.to_ascii_uppercase();
+        commands.insert(KeyCode::Char(upper_case_char), WindowCommand{activator_key: KeyCode::Char(upper_case_char), action: handle_char_press(upper_case_char)});
+    }
+
+    Some(Window {
+        ui: practice_window,
+        commands
+    })
+}
+
+fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
+    Box::new(
+        |f| {
+            let paragraph = Paragraph::new("Thank you for playing!").alignment(Alignment::Center);
+            f.render_widget(paragraph, f.size());
+        }
+    )
+}
+
+fn create_end_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
+    Some(Window {
+        ui: end_window,
+        commands: HashMap::from([
+            (
+                KeyCode::Char('e'),
+                WindowCommand::new_char_command('e', Box::new(|_| None)),
+            ),
+            (
+                KeyCode::Esc,
+                WindowCommand{ activator_key: KeyCode::Esc, action: Box::new(|_| None)},
+            ),
+            (
+                KeyCode::Char('r'),
+                WindowCommand::new_char_command('r', Box::new(create_empty_practice_window)),
+            )
+        ])
     })
 }
 

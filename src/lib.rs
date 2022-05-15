@@ -10,53 +10,71 @@ use tui::{
 pub mod windows;
 
 #[derive(Clone)]
-pub enum ParagraphChar {
-    Correct(char),
-    Wrong(char),
-    Default(char)
+pub enum CharStatus {
+    Correct,
+    Wrong,
+    Default
+}
+
+#[derive(Clone)]
+pub struct ParagraphChar {
+    character: char,
+    status: CharStatus
 }
 
 impl ParagraphChar {
+    pub fn new(c: char, status: CharStatus) -> ParagraphChar {
+        ParagraphChar {
+            character: c,
+            status
+        }
+    }
     pub fn to_span(&self) -> Span {
-        match self {
-            ParagraphChar::Correct(c) => Span::styled(c.to_string(), Style::default().fg(Color::Green)),
-            ParagraphChar::Wrong(c) => Span::styled(c.to_string(), Style::default().fg(Color::Red)),
-            ParagraphChar::Default(c) => Span::styled(c.to_string(), Style::default().fg(Color::DarkGray))
+        match self.status {
+            CharStatus::Correct => Span::styled(self.character.to_string(), Style::default().fg(Color::Green)),
+            CharStatus::Wrong => Span::styled(self.character.to_string(), Style::default().fg(Color::Red)),
+            CharStatus::Default => Span::styled(self.character.to_string(), Style::default().fg(Color::DarkGray))
         }
     }
 }
 
 #[derive(Clone)]
 pub struct State {
-    chars: Vec<ParagraphChar>
+    chars: Vec<ParagraphChar>,
+    error_count: u16,
+    index: usize
 }
 
 impl State {
     pub fn new() -> State {
         State {
-            chars: vec![]
+            chars: vec![],
+            error_count: 0,
+            index: 0
         }
     }
     pub fn from(s: String) -> State {
         let mut chars = vec![];
         for elem in s.chars() {
-            chars.push(ParagraphChar::Default(elem));
+            chars.push(ParagraphChar::new(elem, CharStatus::Default));
         }
         State {
-            chars
+            chars,
+            error_count: 0,
+            index: 0
         }
     }
 }
 
 pub struct WindowCommand<B: Backend> {
     pub activator_key: KeyCode,
-    pub action:  fn(&mut State) -> Option<Window<B>>,
+    pub action:  Box<dyn Fn(&mut State) -> Option<Window<B>>>,
 }
 
 impl<B: Backend> WindowCommand<B> {
     pub fn new_char_command(
         activator: char,
-        command: fn(&mut State) -> Option<Window<B>>,
+        command: Box<dyn Fn(&mut State) -> Option<Window<B>>>,
     ) -> WindowCommand<B> {
         WindowCommand {
             activator_key: KeyCode::Char(activator),
