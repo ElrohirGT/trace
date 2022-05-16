@@ -38,6 +38,14 @@ impl ParagraphChar {
     }
 }
 
+pub fn convert_string_to_chars(s: String) -> Vec<ParagraphChar> {
+    let mut vector = vec![];
+    for elem in s.chars() {
+        vector.push(ParagraphChar::new(elem, CharStatus::Default));
+    }
+    return vector;
+}
+
 #[derive(Clone)]
 pub struct State {
     chars: Vec<ParagraphChar>,

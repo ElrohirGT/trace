@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use crate::{Window, WindowCommand, State, ParagraphChar, CharStatus};
+use crate::{Window, WindowCommand, State, ParagraphChar, CharStatus, convert_string_to_chars};
 use crossterm::event::KeyCode;
 use std::collections::HashMap;
 use tui::{
@@ -103,17 +103,11 @@ fn create_empty_practice_window<B: 'static + Backend>(state: &mut State) -> Opti
     create_practice_window(state)
 }
 fn get_random_practice_text() -> Vec<ParagraphChar> {
-    return vec![
-        ParagraphChar::new('H', CharStatus::Default),
-        ParagraphChar::new('e', CharStatus::Default),
-        ParagraphChar::new('l', CharStatus::Default),
-        ParagraphChar::new('l', CharStatus::Default),
-        ParagraphChar::new('o', CharStatus::Default),
-    ]
+    return convert_string_to_chars("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse ornare ipsum sit amet purus tincidunt, sit amet finibus urna tincidunt. Quisque ut neque hendrerit diam pretium porttitor quis ut neque. Fusce facilisis nunc ut aliquet dignissim. Proin sed libero lorem. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nam viverra purus tellus, vitae sodales magna placerat at. Sed mi est, luctus vel odio sit amet, auctor suscipit diam. Nam quis convallis leo.".to_string());
 }
 fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>>{
-        if state.index > 0 {//Removing the first 
+        if state.index > 0 {//Going back to the previous inputted char, because the current is not inputted.
             state.index -= 1;
         }
         let current_char = &state.chars[state.index];
@@ -127,31 +121,6 @@ fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<
         };
         state.chars[state.index] = defaulted_char;
         create_practice_window(state)
-    }
-
-    fn handle_char_press<B: 'static + Backend>(pressed_character: char) -> Box<dyn Fn(&mut State)->Option<Window<B>>> {
-        Box::new(move |state| {
-            let end_of_paragraph = state.index == state.chars.len();
-            if !end_of_paragraph {
-                let current_char = &state.chars[state.index];
-                let is_correct = current_char.character == pressed_character;
-                let status = if is_correct {CharStatus::Correct} else {CharStatus::Wrong};
-    
-                if !is_correct {
-                    state.error_count += 1;
-                }
-    
-                let transformed_char = ParagraphChar::new(current_char.character, status);
-                state.chars[state.index] = transformed_char;
-                
-                let done = state.index == state.chars.len() - 1;
-                if done && state.error_count == 0 {
-                    return create_end_window(state);
-                }
-                state.index += 1;
-            }
-            return create_practice_window(state);
-        })
     }
 
     let mut commands = HashMap::from([
@@ -170,17 +139,56 @@ fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<
             }
         ),
     ]);
-    let chars = vec!['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'ñ', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
-    for elem in chars {
-        commands.insert(KeyCode::Char(elem), WindowCommand{activator_key: KeyCode::Char(elem), action: handle_char_press(elem)});
-        let upper_case_char = elem.to_ascii_uppercase();
-        commands.insert(KeyCode::Char(upper_case_char), WindowCommand{activator_key: KeyCode::Char(upper_case_char), action: handle_char_press(upper_case_char)});
-    }
 
+    let chars = vec!['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'ñ', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+    add_to_commands(&mut commands, &chars);
+    
+    let upper_chars: Vec<char> = chars.iter().map(|a| a.to_ascii_uppercase()).collect();
+    add_to_commands(&mut commands, &upper_chars);
+
+    let punctuation = vec![' ',',','.',':','"','-','@',';','<','>','+','-','_','(',')','=','*','/','¡','!','¿','?','#','$','%','&','°','\'','^','~','[',']','{','}'];
+    add_to_commands(&mut commands, &punctuation);
+
+    let numbers = vec!['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+    add_to_commands(&mut commands, &numbers);
+
+    let extras = vec!['á', 'Á', 'é', 'É', 'í', 'Í', 'ó', 'Ó', 'ú', 'Ú', 'ä', 'Ä', 'ë', 'Ë', 'ï', 'Ï', 'ö', 'Ö', 'ü', 'Ü', 'ç'];
+    add_to_commands(&mut commands, &extras);
     Some(Window {
         ui: practice_window,
         commands
     })
+}
+
+fn handle_char_press<B: 'static + Backend>(pressed_character: char) -> Box<dyn Fn(&mut State)->Option<Window<B>>> {
+    Box::new(move |state| {
+        let end_of_paragraph = state.index == state.chars.len();
+        if !end_of_paragraph {
+            let current_char = &state.chars[state.index];
+            let is_correct = current_char.character == pressed_character;
+            let status = if is_correct {CharStatus::Correct} else {CharStatus::Wrong};
+
+            if !is_correct {
+                state.error_count += 1;
+            }
+
+            let transformed_char = ParagraphChar::new(current_char.character, status);
+            state.chars[state.index] = transformed_char;
+            
+            let done = state.index == state.chars.len() - 1;
+            if done && state.error_count == 0 {
+                return create_end_window(state);
+            }
+            state.index += 1;
+        }
+        return create_practice_window(state);
+    })
+}
+
+fn add_to_commands<B: 'static + Backend>(commands: &mut HashMap<KeyCode, WindowCommand<B>>, char_array: &Vec<char>) {
+    for elem in char_array {
+        commands.insert(KeyCode::Char(*elem), WindowCommand{ activator_key: KeyCode::Char(*elem), action: handle_char_press(*elem) });
+    }
 }
 
 fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
