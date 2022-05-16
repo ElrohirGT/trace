@@ -1,3 +1,5 @@
+use std::path::Path;
+use crate::AppParagraph;
 use std::rc::Rc;
 use crate::{Window, WindowCommand, State, ParagraphChar, CharStatus, convert_string_to_chars};
 use crossterm::event::KeyCode;
@@ -10,6 +12,9 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
+use std::fs;
+use serde_json::{Result};
+use rand::seq::SliceRandom;
 
 pub fn main_menu_window<B: Backend>(_: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
     Box::new(|f| {
@@ -103,7 +108,12 @@ fn create_empty_practice_window<B: 'static + Backend>(state: &mut State) -> Opti
     create_practice_window(state)
 }
 fn get_random_practice_text() -> Vec<ParagraphChar> {
-    return convert_string_to_chars("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse ornare ipsum sit amet purus tincidunt, sit amet finibus urna tincidunt. Quisque ut neque hendrerit diam pretium porttitor quis ut neque. Fusce facilisis nunc ut aliquet dignissim. Proin sed libero lorem. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nam viverra purus tellus, vitae sodales magna placerat at. Sed mi est, luctus vel odio sit amet, auctor suscipit diam. Nam quis convallis leo.".to_string());
+    let current_dir = std::env::current_dir().unwrap();
+    let path = Path::new(&current_dir).join("database.json");
+    let json = fs::read_to_string(path).expect("");
+    let paragraphs: Vec<AppParagraph> = serde_json::from_str(&json).unwrap();
+    let random_chosen_par = paragraphs.choose(&mut rand::thread_rng()).unwrap();
+    return convert_string_to_chars(random_chosen_par.content.to_string());
 }
 fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>>{
@@ -162,26 +172,28 @@ fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<
 
 fn handle_char_press<B: 'static + Backend>(pressed_character: char) -> Box<dyn Fn(&mut State)->Option<Window<B>>> {
     Box::new(move |state| {
-        let end_of_paragraph = state.index == state.chars.len();
-        if !end_of_paragraph {
-            let current_char = &state.chars[state.index];
-            let is_correct = current_char.character == pressed_character;
-            let status = if is_correct {CharStatus::Correct} else {CharStatus::Wrong};
+        let current_char = &state.chars[state.index];
+        let is_correct = current_char.character == pressed_character;
+        let status = if is_correct {CharStatus::Correct} else {CharStatus::Wrong};
+        
+        let transformed_char = ParagraphChar::new(current_char.character, status);
+        state.chars[state.index] = transformed_char;
+        
+        state.index += 1;
 
-            if !is_correct {
-                state.error_count += 1;
-            }
-
-            let transformed_char = ParagraphChar::new(current_char.character, status);
-            state.chars[state.index] = transformed_char;
-            
-            let done = state.index == state.chars.len() - 1;
-            if done && state.error_count == 0 {
-                return create_end_window(state);
-            }
-            state.index += 1;
+        if !is_correct {
+            state.error_count += 1;
         }
-        return create_practice_window(state);
+
+
+        let end_of_paragraph = state.index == state.chars.len();
+        
+        if end_of_paragraph && state.error_count == 0 {
+            create_end_window(state)
+        }
+        else {
+            create_practice_window(state)
+        }
     })
 }
 

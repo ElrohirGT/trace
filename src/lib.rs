@@ -7,7 +7,18 @@ use tui::{
     Frame,
     text::Span
 };
+// use serde::{Deserialize};
+use serde_derive::{Deserialize};
+
 pub mod windows;
+
+#[derive(Deserialize, Debug)]
+pub struct AppParagraph {
+    content: String,
+    title: String,
+    author: String,
+    date: String
+}
 
 #[derive(Clone)]
 pub enum CharStatus {
@@ -32,7 +43,15 @@ impl ParagraphChar {
     pub fn to_span(&self) -> Span {
         match self.status {
             CharStatus::Correct => Span::styled(self.character.to_string(), Style::default().fg(Color::Green)),
-            CharStatus::Wrong => Span::styled(self.character.to_string(), Style::default().fg(Color::Red)),
+            CharStatus::Wrong => {
+                if self.character == ' '{
+                    Span::styled(self.character.to_string(), Style::default().bg(Color::Red))
+                }
+                else{
+                    Span::styled(self.character.to_string(), Style::default().fg(Color::Red))
+
+                }
+            },
             CharStatus::Default => Span::styled(self.character.to_string(), Style::default().fg(Color::DarkGray))
         }
     }
@@ -57,17 +76,6 @@ impl State {
     pub fn new() -> State {
         State {
             chars: vec![],
-            error_count: 0,
-            index: 0
-        }
-    }
-    pub fn from(s: String) -> State {
-        let mut chars = vec![];
-        for elem in s.chars() {
-            chars.push(ParagraphChar::new(elem, CharStatus::Default));
-        }
-        State {
-            chars,
             error_count: 0,
             index: 0
         }
