@@ -140,7 +140,7 @@ fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<
         ),
     ]);
 
-    let chars = vec!['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'ñ', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+    let chars = vec!['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
     add_to_commands(&mut commands, &chars);
     
     let upper_chars: Vec<char> = chars.iter().map(|a| a.to_ascii_uppercase()).collect();
@@ -152,7 +152,7 @@ fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<
     let numbers = vec!['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
     add_to_commands(&mut commands, &numbers);
 
-    let extras = vec!['á', 'Á', 'é', 'É', 'í', 'Í', 'ó', 'Ó', 'ú', 'Ú', 'ä', 'Ä', 'ë', 'Ë', 'ï', 'Ï', 'ö', 'Ö', 'ü', 'Ü', 'ç'];
+    let extras = vec!['á', 'Á', 'é', 'É', 'í', 'Í', 'ó', 'Ó', 'ú', 'Ú', 'ä', 'Ä', 'ë', 'Ë', 'ï', 'Ï', 'ö', 'Ö', 'ü', 'Ü', 'ç', 'ñ', 'Ñ'];
     add_to_commands(&mut commands, &extras);
     Some(Window {
         ui: practice_window,
