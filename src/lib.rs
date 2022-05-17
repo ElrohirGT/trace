@@ -1,15 +1,14 @@
 use chrono::prelude::*;
-use std::rc::Rc;
-use std::collections::HashMap;
 use crossterm::event::KeyCode;
+use std::{collections::HashMap, rc::Rc};
 use tui::{
     backend::Backend,
-    style::{Style, Color},
+    style::{Color, Style},
+    text::Span,
     Frame,
-    text::Span
 };
 // use serde::{Deserialize};
-use serde_derive::{Deserialize};
+use serde_derive::Deserialize;
 
 pub mod windows;
 
@@ -18,7 +17,7 @@ pub struct AppParagraph {
     content: String,
     title: String,
     author: String,
-    date: String
+    date: String,
 }
 
 impl AppParagraph {
@@ -27,7 +26,7 @@ impl AppParagraph {
             content: "".to_string(),
             title: "".to_string(),
             author: "".to_string(),
-            date: "".to_string()
+            date: "".to_string(),
         }
     }
 }
@@ -43,30 +42,37 @@ pub enum CharStatus {
 #[derive(Clone)]
 pub struct ParagraphChar {
     character: char,
-    status: CharStatus
+    status: CharStatus,
 }
 
 impl ParagraphChar {
     pub fn new(c: char, status: CharStatus) -> ParagraphChar {
         ParagraphChar {
             character: c,
-            status
+            status,
         }
     }
     pub fn to_span(&self) -> Span {
         match self.status {
-            CharStatus::Correct => Span::styled(self.character.to_string(), Style::default().fg(Color::Green)),
-            CharStatus::Current => Span::styled(self.character.to_string(), Style::default().fg(Color::White).bg(Color::DarkGray)),
+            CharStatus::Correct => Span::styled(
+                self.character.to_string(),
+                Style::default().fg(Color::Green),
+            ),
+            CharStatus::Current => Span::styled(
+                self.character.to_string(),
+                Style::default().fg(Color::White).bg(Color::DarkGray),
+            ),
             CharStatus::Wrong => {
-                if self.character == ' '{
+                if self.character == ' ' {
                     Span::styled(self.character.to_string(), Style::default().bg(Color::Red))
-                }
-                else{
+                } else {
                     Span::styled(self.character.to_string(), Style::default().fg(Color::Red))
-
                 }
-            },
-            CharStatus::Default => Span::styled(self.character.to_string(), Style::default().fg(Color::DarkGray))
+            }
+            CharStatus::Default => Span::styled(
+                self.character.to_string(),
+                Style::default().fg(Color::DarkGray),
+            ),
         }
     }
 }
@@ -88,7 +94,7 @@ pub struct State {
     current_error_count: usize,
     total_error_count: usize,
     word_count: usize,
-    index: usize
+    index: usize,
 }
 
 impl State {
@@ -101,7 +107,7 @@ impl State {
             current_error_count: 0,
             total_error_count: 0,
             word_count: 0,
-            index: 0
+            index: 0,
         }
     }
     pub fn reset(&mut self) {
@@ -118,7 +124,7 @@ impl State {
 
 pub struct WindowCommand<B: Backend> {
     pub activator_key: KeyCode,
-    pub action:  Box<dyn Fn(&mut State) -> Option<Window<B>>>,
+    pub action: Box<dyn Fn(&mut State) -> Option<Window<B>>>,
 }
 
 impl<B: Backend> WindowCommand<B> {

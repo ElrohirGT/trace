@@ -1,10 +1,10 @@
+use crate::{
+    convert_string_to_chars, AppParagraph, CharStatus, ParagraphChar, State, Window, WindowCommand,
+};
 use chrono::prelude::*;
-use std::path::Path;
-use crate::AppParagraph;
-use std::rc::Rc;
-use crate::{Window, WindowCommand, State, ParagraphChar, CharStatus, convert_string_to_chars};
 use crossterm::event::KeyCode;
-use std::collections::HashMap;
+use rand::seq::SliceRandom;
+use std::{collections::HashMap, fs, path::Path, rc::Rc};
 use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout},
@@ -13,9 +13,6 @@ use tui::{
     widgets::{Block, Borders, Paragraph, Wrap},
     Frame,
 };
-use std::fs;
-use serde_json::{Result};
-use rand::seq::SliceRandom;
 
 pub fn main_menu_window<B: Backend>(_: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
     Box::new(|f| {
@@ -72,7 +69,10 @@ pub fn create_main_menu_window<B: 'static + Backend>(_: &mut State) -> Option<Wi
             ),
             (
                 KeyCode::Esc,
-                WindowCommand{ activator_key: KeyCode::Esc, action: Box::new(|_| None)},
+                WindowCommand {
+                    activator_key: KeyCode::Esc,
+                    action: Box::new(|_| None),
+                },
             ),
             (
                 KeyCode::Char('p'),
@@ -90,14 +90,14 @@ pub fn practice_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>
     Box::new(move |f| {
         let spans: Vec<Span> = state.chars.iter().map(|c| c.to_span()).collect();
         let layout = Layout::default()
-            .vertical_margin(f.size().height/4)
-            .horizontal_margin(f.size().width/3)
+            .vertical_margin(f.size().height / 4)
+            .horizontal_margin(f.size().width / 3)
             .constraints([Constraint::Percentage(1)].as_ref())
             .split(f.size());
-        
+
         let title = Paragraph::new(vec![Spans::from(spans)])
-        .alignment(Alignment::Center)
-        .wrap(Wrap { trim: false });
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: false });
 
         f.render_widget(title, layout[0]);
     })
@@ -118,11 +118,13 @@ fn get_random_app_paragraph() -> AppParagraph {
     return paragraphs.choose(&mut rand::thread_rng()).unwrap().clone();
 }
 fn create_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
-    fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>>{
+    fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
         if state.index != state.chars.len() {
-            state.chars[state.index] = ParagraphChar::new(state.chars[state.index].character, CharStatus::Default);
+            state.chars[state.index] =
+                ParagraphChar::new(state.chars[state.index].character, CharStatus::Default);
         }
-        if state.index > 0 {//Going back to the previous inputted char, because the current is not inputted.
+        if state.index > 0 {
+            //Going back to the previous inputted char, because the current is not inputted.
             state.index -= 1;
         }
         let current_char = &state.chars[state.index];
@@ -132,8 +134,8 @@ fn create_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Win
             CharStatus::Wrong => {
                 state.current_error_count -= 1;
                 ParagraphChar::new(current_char.character, CharStatus::Current)
-            },
-            CharStatus::Default => ParagraphChar::new(current_char.character, CharStatus::Current)
+            }
+            CharStatus::Default => ParagraphChar::new(current_char.character, CharStatus::Current),
         };
         state.chars[state.index] = defaulted_char;
         create_practice_window(state)
@@ -145,46 +147,61 @@ fn create_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Win
             WindowCommand {
                 activator_key: KeyCode::Esc,
                 action: Box::new(create_main_menu_window),
-            }
+            },
         ),
         (
             KeyCode::Backspace,
             WindowCommand {
                 activator_key: KeyCode::Backspace,
-                action: Box::new(handle_backspace_press)
-            }
+                action: Box::new(handle_backspace_press),
+            },
         ),
     ]);
 
-    let chars = vec!['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+    let chars = vec![
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+        's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    ];
     add_to_commands(&mut commands, &chars);
-    
+
     let upper_chars: Vec<char> = chars.iter().map(|a| a.to_ascii_uppercase()).collect();
     add_to_commands(&mut commands, &upper_chars);
 
-    let punctuation = vec![' ',',','.',':','"','-','@',';','<','>','+','-','_','(',')','=','*','/','¡','!','¿','?','#','$','%','&','°','\'','^','~','[',']','{','}'];
+    let punctuation = vec![
+        ' ', ',', '.', ':', '"', '-', '@', ';', '<', '>', '+', '-', '_', '(', ')', '=', '*', '/',
+        '¡', '!', '¿', '?', '#', '$', '%', '&', '°', '\'', '^', '~', '[', ']', '{', '}',
+    ];
     add_to_commands(&mut commands, &punctuation);
 
     let numbers = vec!['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
     add_to_commands(&mut commands, &numbers);
 
-    let extras = vec!['á', 'Á', 'é', 'É', 'í', 'Í', 'ó', 'Ó', 'ú', 'Ú', 'ä', 'Ä', 'ë', 'Ë', 'ï', 'Ï', 'ö', 'Ö', 'ü', 'Ü', 'ç', 'ñ', 'Ñ'];
+    let extras = vec![
+        'á', 'Á', 'é', 'É', 'í', 'Í', 'ó', 'Ó', 'ú', 'Ú', 'ä', 'Ä', 'ë', 'Ë', 'ï', 'Ï', 'ö', 'Ö',
+        'ü', 'Ü', 'ç', 'ñ', 'Ñ',
+    ];
     add_to_commands(&mut commands, &extras);
     Some(Window {
         ui: practice_window,
-        commands
+        commands,
     })
 }
 
-fn handle_char_press<B: 'static + Backend>(pressed_character: char) -> Box<dyn Fn(&mut State)->Option<Window<B>>> {
+fn handle_char_press<B: 'static + Backend>(
+    pressed_character: char,
+) -> Box<dyn Fn(&mut State) -> Option<Window<B>>> {
     Box::new(move |state: &mut State| {
         let current_char = &state.chars[state.index];
         let is_correct = current_char.character == pressed_character;
-        let status = if is_correct {CharStatus::Correct} else {CharStatus::Wrong};
-        
+        let status = if is_correct {
+            CharStatus::Correct
+        } else {
+            CharStatus::Wrong
+        };
+
         let transformed_char = ParagraphChar::new(current_char.character, status);
         state.chars[state.index] = transformed_char;
-        
+
         state.index += 1;
 
         if !is_correct {
@@ -193,15 +210,15 @@ fn handle_char_press<B: 'static + Backend>(pressed_character: char) -> Box<dyn F
         }
 
         let end_of_paragraph = state.index == state.chars.len();
-        
+
         if end_of_paragraph && state.current_error_count == 0 {
             state.end_time = Utc::now();
             create_end_window(state)
-        }
-        else {
+        } else {
             if !end_of_paragraph {
                 let current_char = &state.chars[state.index];
-                let transformed_char = ParagraphChar::new(current_char.character, CharStatus::Current);
+                let transformed_char =
+                    ParagraphChar::new(current_char.character, CharStatus::Current);
                 state.chars[state.index] = transformed_char;
             }
             create_practice_window(state)
@@ -209,61 +226,96 @@ fn handle_char_press<B: 'static + Backend>(pressed_character: char) -> Box<dyn F
     })
 }
 
-fn add_to_commands<B: 'static + Backend>(commands: &mut HashMap<KeyCode, WindowCommand<B>>, char_array: &Vec<char>) {
+fn add_to_commands<B: 'static + Backend>(
+    commands: &mut HashMap<KeyCode, WindowCommand<B>>,
+    char_array: &Vec<char>,
+) {
     for elem in char_array {
-        commands.insert(KeyCode::Char(*elem), WindowCommand{ activator_key: KeyCode::Char(*elem), action: handle_char_press(*elem) });
+        commands.insert(
+            KeyCode::Char(*elem),
+            WindowCommand {
+                activator_key: KeyCode::Char(*elem),
+                action: handle_char_press(*elem),
+            },
+        );
     }
 }
 
 fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
-    Box::new(
-        move |f| {
-            let accuracy = (state.chars.len() - state.total_error_count) as f64 / state.chars.len() as f64;
-            let duration = state.end_time - state.initial_time;
-            let seconds = (duration.num_milliseconds() as f64) / 1000.0;
+    Box::new(move |f| {
+        let accuracy =
+            (state.chars.len() - state.total_error_count) as f64 / state.chars.len() as f64;
+        let duration = state.end_time - state.initial_time;
+        let seconds = (duration.num_milliseconds() as f64) / 1000.0;
 
-            let word_count = state.word_count as f64;
-            let wpm = word_count / seconds * 60.0;
-            let layout = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([
+        let word_count = state.word_count as f64;
+        let wpm = word_count / seconds * 60.0;
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
                     Constraint::Percentage(20),
                     Constraint::Percentage(20),
                     Constraint::Percentage(20),
                     Constraint::Percentage(20),
                     Constraint::Percentage(20),
-                ].as_ref())
-                .margin(10)
-                .split(f.size());
-            
-            let title_paragraph = Paragraph::new("Thank you for playing!").alignment(Alignment::Center);
-            f.render_widget(title_paragraph, layout[0]);
-            
-            let words_per_minute = Paragraph::new(Spans::from(vec![
-                Span::from("WPM: "),
-                Span::styled(format!("{:.2}", wpm), Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD)),
-            ])).alignment(Alignment::Center);
-            f.render_widget(words_per_minute, layout[1]);
+                ]
+                .as_ref(),
+            )
+            .margin(10)
+            .split(f.size());
 
-            let word_count_container = Paragraph::new(Spans::from(vec![
-                Span::from("Word Count: "),
-                Span::styled(format!("{:.2}", state.word_count), Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD)),
-            ])).alignment(Alignment::Center);
-            f.render_widget(word_count_container, layout[2]);
-            
-            let time_container = Paragraph::new(Spans::from(vec![
-                Span::from("Time: "),
-                Span::styled(format!("{} s", seconds), Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD))
-            ])).alignment(Alignment::Center);
-            f.render_widget(time_container, layout[3]);
+        let title_paragraph = Paragraph::new("Thank you for playing!").alignment(Alignment::Center);
+        f.render_widget(title_paragraph, layout[0]);
 
-            let accuracy_container = Paragraph::new(Spans::from(vec![
-                Span::from("Accuracy: "),
-                Span::styled(format!("{:.2}%", accuracy*100.0), Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD))
-            ])).alignment(Alignment::Center);
-            f.render_widget(accuracy_container, layout[4]);
-        }
-    )
+        let words_per_minute = Paragraph::new(Spans::from(vec![
+            Span::from("WPM: "),
+            Span::styled(
+                format!("{:.2}", wpm),
+                Style::default()
+                    .fg(Color::LightCyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]))
+        .alignment(Alignment::Center);
+        f.render_widget(words_per_minute, layout[1]);
+
+        let word_count_container = Paragraph::new(Spans::from(vec![
+            Span::from("Word Count: "),
+            Span::styled(
+                format!("{:.2}", state.word_count),
+                Style::default()
+                    .fg(Color::LightCyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]))
+        .alignment(Alignment::Center);
+        f.render_widget(word_count_container, layout[2]);
+
+        let time_container = Paragraph::new(Spans::from(vec![
+            Span::from("Time: "),
+            Span::styled(
+                format!("{} s", seconds),
+                Style::default()
+                    .fg(Color::LightCyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]))
+        .alignment(Alignment::Center);
+        f.render_widget(time_container, layout[3]);
+
+        let accuracy_container = Paragraph::new(Spans::from(vec![
+            Span::from("Accuracy: "),
+            Span::styled(
+                format!("{:.2}%", accuracy * 100.0),
+                Style::default()
+                    .fg(Color::LightCyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]))
+        .alignment(Alignment::Center);
+        f.render_widget(accuracy_container, layout[4]);
+    })
 }
 
 fn create_end_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
@@ -276,13 +328,16 @@ fn create_end_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
             ),
             (
                 KeyCode::Esc,
-                WindowCommand{ activator_key: KeyCode::Esc, action: Box::new(|_| None)},
+                WindowCommand {
+                    activator_key: KeyCode::Esc,
+                    action: Box::new(|_| None),
+                },
             ),
             (
                 KeyCode::Char('r'),
                 WindowCommand::new_char_command('r', Box::new(create_empty_practice_window)),
-            )
-        ])
+            ),
+        ]),
     })
 }
 

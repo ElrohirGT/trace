@@ -1,13 +1,11 @@
-use std::rc::Rc;
 use crossterm::{
     event::{read, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use std::io;
-use trace::windows::create_main_menu_window;
+use std::{io, rc::Rc};
+use trace::{windows::create_main_menu_window, State};
 use tui::{backend::CrosstermBackend, Terminal};
-use trace::State;
 
 fn main() -> Result<(), io::Error> {
     //Setup terminal
@@ -29,7 +27,7 @@ fn main() -> Result<(), io::Error> {
                 match user_input {
                     Event::Key(event) => match current_window.commands.get(&event.code) {
                         None => window,
-                        Some(command) => (command.action)(Rc::make_mut(&mut state))
+                        Some(command) => (command.action)(Rc::make_mut(&mut state)),
                     },
                     Event::Mouse(_) => window,
                     Event::Resize(_, _) => window,
