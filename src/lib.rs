@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use std::rc::Rc;
 use std::collections::HashMap;
 use crossterm::event::KeyCode;
@@ -12,7 +13,7 @@ use serde_derive::{Deserialize};
 
 pub mod windows;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Clone)]
 pub struct AppParagraph {
     content: String,
     title: String,
@@ -20,11 +21,23 @@ pub struct AppParagraph {
     date: String
 }
 
+impl AppParagraph {
+    pub fn new() -> AppParagraph {
+        AppParagraph {
+            content: "".to_string(),
+            title: "".to_string(),
+            author: "".to_string(),
+            date: "".to_string()
+        }
+    }
+}
+
 #[derive(Clone)]
 pub enum CharStatus {
     Correct,
     Wrong,
-    Default
+    Default,
+    Current,
 }
 
 #[derive(Clone)]
@@ -43,6 +56,7 @@ impl ParagraphChar {
     pub fn to_span(&self) -> Span {
         match self.status {
             CharStatus::Correct => Span::styled(self.character.to_string(), Style::default().fg(Color::Green)),
+            CharStatus::Current => Span::styled(self.character.to_string(), Style::default().fg(Color::White).bg(Color::DarkGray)),
             CharStatus::Wrong => {
                 if self.character == ' '{
                     Span::styled(self.character.to_string(), Style::default().bg(Color::Red))
@@ -68,7 +82,11 @@ pub fn convert_string_to_chars(s: String) -> Vec<ParagraphChar> {
 #[derive(Clone)]
 pub struct State {
     chars: Vec<ParagraphChar>,
-    error_count: u16,
+    paragraph: AppParagraph,
+    initial_time: DateTime<Utc>,
+    end_time: DateTime<Utc>,
+    error_count: usize,
+    word_count: usize,
     index: usize
 }
 
@@ -76,9 +94,22 @@ impl State {
     pub fn new() -> State {
         State {
             chars: vec![],
+            paragraph: AppParagraph::new(),
+            initial_time: Utc::now(),
+            end_time: Utc::now(),
             error_count: 0,
+            word_count: 0,
             index: 0
         }
+    }
+    pub fn reset(&mut self) {
+        self.chars = vec![];
+        self.paragraph = AppParagraph::new();
+        self.initial_time = Utc::now();
+        self.end_time = Utc::now();
+        self.error_count = 0;
+        self.word_count = 0;
+        self.index = 0;
     }
 }
 

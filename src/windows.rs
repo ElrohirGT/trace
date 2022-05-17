@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use std::path::Path;
 use crate::AppParagraph;
 use std::rc::Rc;
@@ -102,32 +103,37 @@ pub fn practice_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>
     })
 }
 fn create_empty_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
-    state.index = 0;
-    state.error_count = 0;
-    state.chars = get_random_practice_text();
+    state.reset();
+    state.paragraph = get_random_app_paragraph();
+    state.word_count = state.paragraph.content.split(' ').count();
+    state.chars = convert_string_to_chars(state.paragraph.content.to_string());
+    state.initial_time = Utc::now();
     create_practice_window(state)
 }
-fn get_random_practice_text() -> Vec<ParagraphChar> {
+fn get_random_app_paragraph() -> AppParagraph {
     let current_dir = std::env::current_dir().unwrap();
     let path = Path::new(&current_dir).join("database.json");
     let json = fs::read_to_string(path).expect("");
     let paragraphs: Vec<AppParagraph> = serde_json::from_str(&json).unwrap();
-    let random_chosen_par = paragraphs.choose(&mut rand::thread_rng()).unwrap();
-    return convert_string_to_chars(random_chosen_par.content.to_string());
+    return paragraphs.choose(&mut rand::thread_rng()).unwrap().clone();
 }
-fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
+fn create_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
     fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>>{
+        if state.index != state.chars.len() {
+            state.chars[state.index] = ParagraphChar::new(state.chars[state.index].character, CharStatus::Default);
+        }
         if state.index > 0 {//Going back to the previous inputted char, because the current is not inputted.
             state.index -= 1;
         }
         let current_char = &state.chars[state.index];
         let defaulted_char = match current_char.status {
-            CharStatus::Correct => ParagraphChar::new(current_char.character, CharStatus::Default),
+            CharStatus::Current => ParagraphChar::new(current_char.character, CharStatus::Current),
+            CharStatus::Correct => ParagraphChar::new(current_char.character, CharStatus::Current),
             CharStatus::Wrong => {
                 state.error_count -= 1;
-                ParagraphChar::new(current_char.character, CharStatus::Default)
+                ParagraphChar::new(current_char.character, CharStatus::Current)
             },
-            CharStatus::Default => ParagraphChar::new(current_char.character, CharStatus::Default)
+            CharStatus::Default => ParagraphChar::new(current_char.character, CharStatus::Current)
         };
         state.chars[state.index] = defaulted_char;
         create_practice_window(state)
@@ -171,7 +177,7 @@ fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<
 }
 
 fn handle_char_press<B: 'static + Backend>(pressed_character: char) -> Box<dyn Fn(&mut State)->Option<Window<B>>> {
-    Box::new(move |state| {
+    Box::new(move |state: &mut State| {
         let current_char = &state.chars[state.index];
         let is_correct = current_char.character == pressed_character;
         let status = if is_correct {CharStatus::Correct} else {CharStatus::Wrong};
@@ -185,13 +191,18 @@ fn handle_char_press<B: 'static + Backend>(pressed_character: char) -> Box<dyn F
             state.error_count += 1;
         }
 
-
         let end_of_paragraph = state.index == state.chars.len();
         
         if end_of_paragraph && state.error_count == 0 {
+            state.end_time = Utc::now();
             create_end_window(state)
         }
         else {
+            if !end_of_paragraph {
+                let current_char = &state.chars[state.index];
+                let transformed_char = ParagraphChar::new(current_char.character, CharStatus::Current);
+                state.chars[state.index] = transformed_char;
+            }
             create_practice_window(state)
         }
     })
@@ -205,9 +216,44 @@ fn add_to_commands<B: 'static + Backend>(commands: &mut HashMap<KeyCode, WindowC
 
 fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
     Box::new(
-        |f| {
-            let paragraph = Paragraph::new("Thank you for playing!").alignment(Alignment::Center);
-            f.render_widget(paragraph, f.size());
+        move |f| {
+            let duration = state.end_time - state.initial_time;
+            let seconds = (duration.num_milliseconds() as f64) / 1000.0;
+
+            let word_count = state.word_count as f64;
+            let wpm = word_count / seconds * 60.0;
+            let layout = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Percentage(20),
+                    Constraint::Percentage(40),
+                    Constraint::Percentage(20),
+                    Constraint::Percentage(20)
+                ].as_ref())
+                .margin(10)
+                .split(f.size());
+            
+            let title_paragraph = Paragraph::new("Thank you for playing!").alignment(Alignment::Center);
+            f.render_widget(title_paragraph, layout[0]);
+
+            let word_count_container = Paragraph::new(Spans::from(vec![
+                Span::from("Word Count: "),
+                Span::styled(format!("{:.2}", state.word_count), Style::default().fg(Color::LightCyan)),
+            ])).alignment(Alignment::Center);
+            f.render_widget(word_count_container, layout[2]);
+            
+            let time_container = Paragraph::new(Spans::from(vec![
+                Span::from("Time: "),
+                Span::styled(seconds.to_string(), Style::default().fg(Color::LightCyan)),
+                Span::from("s")
+            ])).alignment(Alignment::Center);
+            f.render_widget(time_container, layout[3]);
+
+            let words_per_minute = Paragraph::new(Spans::from(vec![
+                Span::from("WPM: "),
+                Span::styled(wpm.to_string(), Style::default().fg(Color::LightCyan)),
+            ])).alignment(Alignment::Center);
+            f.render_widget(words_per_minute, layout[1]);
         }
     )
 }
