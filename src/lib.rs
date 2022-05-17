@@ -85,7 +85,8 @@ pub struct State {
     paragraph: AppParagraph,
     initial_time: DateTime<Utc>,
     end_time: DateTime<Utc>,
-    error_count: usize,
+    current_error_count: usize,
+    total_error_count: usize,
     word_count: usize,
     index: usize
 }
@@ -97,7 +98,8 @@ impl State {
             paragraph: AppParagraph::new(),
             initial_time: Utc::now(),
             end_time: Utc::now(),
-            error_count: 0,
+            current_error_count: 0,
+            total_error_count: 0,
             word_count: 0,
             index: 0
         }
@@ -107,7 +109,8 @@ impl State {
         self.paragraph = AppParagraph::new();
         self.initial_time = Utc::now();
         self.end_time = Utc::now();
-        self.error_count = 0;
+        self.current_error_count = 0;
+        self.total_error_count = 0;
         self.word_count = 0;
         self.index = 0;
     }

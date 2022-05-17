@@ -130,7 +130,7 @@ fn create_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Win
             CharStatus::Current => ParagraphChar::new(current_char.character, CharStatus::Current),
             CharStatus::Correct => ParagraphChar::new(current_char.character, CharStatus::Current),
             CharStatus::Wrong => {
-                state.error_count -= 1;
+                state.current_error_count -= 1;
                 ParagraphChar::new(current_char.character, CharStatus::Current)
             },
             CharStatus::Default => ParagraphChar::new(current_char.character, CharStatus::Current)
@@ -188,12 +188,13 @@ fn handle_char_press<B: 'static + Backend>(pressed_character: char) -> Box<dyn F
         state.index += 1;
 
         if !is_correct {
-            state.error_count += 1;
+            state.current_error_count += 1;
+            state.total_error_count += 1;
         }
 
         let end_of_paragraph = state.index == state.chars.len();
         
-        if end_of_paragraph && state.error_count == 0 {
+        if end_of_paragraph && state.current_error_count == 0 {
             state.end_time = Utc::now();
             create_end_window(state)
         }
@@ -217,6 +218,7 @@ fn add_to_commands<B: 'static + Backend>(commands: &mut HashMap<KeyCode, WindowC
 fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
     Box::new(
         move |f| {
+            let accuracy = (state.chars.len() - state.total_error_count) as f64 / state.chars.len() as f64;
             let duration = state.end_time - state.initial_time;
             let seconds = (duration.num_milliseconds() as f64) / 1000.0;
 
@@ -226,34 +228,40 @@ fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
                 .direction(Direction::Vertical)
                 .constraints([
                     Constraint::Percentage(20),
-                    Constraint::Percentage(40),
                     Constraint::Percentage(20),
-                    Constraint::Percentage(20)
+                    Constraint::Percentage(20),
+                    Constraint::Percentage(20),
+                    Constraint::Percentage(20),
                 ].as_ref())
                 .margin(10)
                 .split(f.size());
             
             let title_paragraph = Paragraph::new("Thank you for playing!").alignment(Alignment::Center);
             f.render_widget(title_paragraph, layout[0]);
+            
+            let words_per_minute = Paragraph::new(Spans::from(vec![
+                Span::from("WPM: "),
+                Span::styled(format!("{:.2}", wpm), Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD)),
+            ])).alignment(Alignment::Center);
+            f.render_widget(words_per_minute, layout[1]);
 
             let word_count_container = Paragraph::new(Spans::from(vec![
                 Span::from("Word Count: "),
-                Span::styled(format!("{:.2}", state.word_count), Style::default().fg(Color::LightCyan)),
+                Span::styled(format!("{:.2}", state.word_count), Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD)),
             ])).alignment(Alignment::Center);
             f.render_widget(word_count_container, layout[2]);
             
             let time_container = Paragraph::new(Spans::from(vec![
                 Span::from("Time: "),
-                Span::styled(seconds.to_string(), Style::default().fg(Color::LightCyan)),
-                Span::from("s")
+                Span::styled(format!("{} s", seconds), Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD))
             ])).alignment(Alignment::Center);
             f.render_widget(time_container, layout[3]);
 
-            let words_per_minute = Paragraph::new(Spans::from(vec![
-                Span::from("WPM: "),
-                Span::styled(wpm.to_string(), Style::default().fg(Color::LightCyan)),
+            let accuracy_container = Paragraph::new(Spans::from(vec![
+                Span::from("Accuracy: "),
+                Span::styled(format!("{:.2}%", accuracy*100.0), Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD))
             ])).alignment(Alignment::Center);
-            f.render_widget(words_per_minute, layout[1]);
+            f.render_widget(accuracy_container, layout[4]);
         }
     )
 }
