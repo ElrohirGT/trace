@@ -1,5 +1,5 @@
 use crate::windows::*;
-use crate::{State, Window, WindowCommand};
+use crate::{State, Window, WindowCommand, get_app_path};
 use crossterm::event::KeyCode;
 
 use std::{collections::HashMap, rc::Rc};
@@ -50,7 +50,16 @@ pub fn main_menu_window<B: Backend>(_: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> 
     })
 }
 
-pub fn create_main_menu_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
+pub fn create_main_menu_window<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
+    let path = get_app_path(".user");
+    let user_name = match std::fs::read(path){
+        Ok(bytes) => match std::str::from_utf8(&bytes) {
+            Ok(s) => s.to_string(),
+            Err(_) => return create_user_window(state)
+        },
+        Err(_) => return create_user_window(state)
+    };
+    state.user_name = user_name;
     Some(Window {
         ui: main_menu_window,
         commands: HashMap::from([

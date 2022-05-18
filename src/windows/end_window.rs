@@ -1,3 +1,4 @@
+use tui::text::Text;
 use crate::windows::*;
 use crate::{State, Window, WindowCommand};
 use crossterm::event::KeyCode;
@@ -8,7 +9,6 @@ use tui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    text::{Span, Spans},
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
@@ -32,14 +32,29 @@ fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
             .direction(Direction::Vertical)
             .constraints(
                 [
-                    Constraint::Percentage(10),
-                    Constraint::Percentage(80),
-                    Constraint::Percentage(10),
+                    Constraint::Percentage(35),
+                    Constraint::Percentage(50),
+                    Constraint::Percentage(5),
                 ]
                 .as_ref(),
             )
             .margin(10)
             .split(f.size());
+        let header_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Percentage(20),
+                Constraint::Percentage(40),
+                Constraint::Percentage(40),
+            ].as_ref())
+            .split(layout[0]);
+        let info_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage(50),
+                Constraint::Percentage(50),
+            ].as_ref())
+            .split(header_layout[2]);
 
         let control_buttons = Layout::default()
             .direction(Direction::Horizontal)
@@ -54,8 +69,17 @@ fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
             )
             .split(layout[2]);
 
-        let title_paragraph = Paragraph::new("Thank you for playing!").alignment(Alignment::Center);
-        f.render_widget(title_paragraph, layout[0]);
+        let thanks = Paragraph::new("Thank you for playing!").alignment(Alignment::Center);
+        f.render_widget(thanks, header_layout[0]);
+        
+        let title = Paragraph::new(Text::raw(&state.paragraph.title)).style(Style::default().fg(Color::LightCyan)).alignment(Alignment::Center);
+        f.render_widget(title, header_layout[1]);
+
+        let author = Paragraph::new(Text::raw(&state.paragraph.author)).style(Style::default().fg(Color::LightCyan)).alignment(Alignment::Center);
+        f.render_widget(author, info_layout[0]);
+
+        let date = Paragraph::new(Text::raw(&state.paragraph.date)).style(Style::default().fg(Color::LightCyan)).alignment(Alignment::Center);
+        f.render_widget(date, info_layout[1]);
 
         let table = Table::new(vec![
             Row::new(vec!["#", "Name", "Points", "Time (s)", "Accuracy", "WPM"]).style(

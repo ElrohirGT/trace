@@ -14,6 +14,9 @@ pub use practice_window::*;
 pub mod end_window;
 pub use end_window::*;
 
+pub mod user_window;
+pub use user_window::*;
+
 pub fn create_label_widget<'a>(label: &'a str, value: &'a str, color: Color) -> Paragraph<'a> {
     Paragraph::new(vec![Spans::from(vec![
         Span::from(label),

@@ -1,3 +1,5 @@
+use crate::add_to_commands;
+use crate::generate_all_chars;
 use crate::{
     convert_string_to_chars, windows::*, AppParagraph, CharStatus, ParagraphChar, State, Utc,
     Window, WindowCommand,
@@ -66,7 +68,7 @@ pub fn practice_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>
             .block(
                 Block::default()
                     .borders(Borders::TOP)
-                    .title("You")
+                    .title(state.user_name.to_string())
                     .border_style(Style::default().fg(Color::DarkGray)),
             )
             .gauge_style(
@@ -94,7 +96,7 @@ fn get_random_app_paragraph() -> AppParagraph {
     let paragraphs: Vec<AppParagraph> = serde_json::from_str(&json).unwrap();
     return paragraphs.choose(&mut rand::thread_rng()).unwrap().clone();
 }
-fn create_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
+fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
         if state.index != state.chars.len() {
             state.chars[state.index] =
@@ -135,29 +137,8 @@ fn create_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Win
         ),
     ]);
 
-    let chars = vec![
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
-        's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-    ];
-    add_to_commands(&mut commands, &chars);
-
-    let upper_chars: Vec<char> = chars.iter().map(|a| a.to_ascii_uppercase()).collect();
-    add_to_commands(&mut commands, &upper_chars);
-
-    let punctuation = vec![
-        ' ', ',', '.', ':', '"', '-', '@', ';', '<', '>', '+', '-', '_', '(', ')', '=', '*', '/',
-        '¡', '!', '¿', '?', '#', '$', '%', '&', '°', '\'', '^', '~', '[', ']', '{', '}',
-    ];
-    add_to_commands(&mut commands, &punctuation);
-
-    let numbers = vec!['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-    add_to_commands(&mut commands, &numbers);
-
-    let extras = vec![
-        'á', 'Á', 'é', 'É', 'í', 'Í', 'ó', 'Ó', 'ú', 'Ú', 'ä', 'Ä', 'ë', 'Ë', 'ï', 'Ï', 'ö', 'Ö',
-        'ü', 'Ü', 'ç', 'ñ', 'Ñ',
-    ];
-    add_to_commands(&mut commands, &extras);
+    let chars = generate_all_chars();
+    add_to_commands(&mut commands, &chars, Box::new(handle_char_press));
     Some(Window {
         ui: practice_window,
         commands,
@@ -201,18 +182,4 @@ fn handle_char_press<B: 'static + Backend>(
             create_practice_window(state)
         }
     })
-}
-
-fn add_to_commands<B: 'static + Backend>(
-    commands: &mut HashMap<KeyCode, WindowCommand<B>>, char_array: &Vec<char>,
-) {
-    for elem in char_array {
-        commands.insert(
-            KeyCode::Char(*elem),
-            WindowCommand {
-                activator_key: KeyCode::Char(*elem),
-                action: handle_char_press(*elem),
-            },
-        );
-    }
 }
