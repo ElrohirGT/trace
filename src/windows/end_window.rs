@@ -98,7 +98,7 @@ fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
     })
 }
 
-fn create_end_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
+pub fn create_end_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     Some(Window {
         ui: end_window,
         commands: HashMap::from([
