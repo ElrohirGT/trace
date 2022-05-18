@@ -1,5 +1,6 @@
 use chrono::prelude::*;
 use crossterm::event::KeyCode;
+use serde_derive::Deserialize;
 use std::{collections::HashMap, rc::Rc};
 use tui::{
     backend::Backend,
@@ -7,8 +8,6 @@ use tui::{
     text::Span,
     Frame,
 };
-// use serde::{Deserialize};
-use serde_derive::Deserialize;
 
 pub mod windows;
 
@@ -129,8 +128,7 @@ pub struct WindowCommand<B: Backend> {
 
 impl<B: Backend> WindowCommand<B> {
     pub fn new_char_command(
-        activator: char,
-        command: Box<dyn Fn(&mut State) -> Option<Window<B>>>,
+        activator: char, command: Box<dyn Fn(&mut State) -> Option<Window<B>>>,
     ) -> WindowCommand<B> {
         WindowCommand {
             activator_key: KeyCode::Char(activator),
