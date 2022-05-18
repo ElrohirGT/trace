@@ -1,3 +1,6 @@
+use tui::widgets::Table;
+use tui::widgets::Row;
+use tui::widgets::Gauge;
 use crate::{
     convert_string_to_chars, AppParagraph, CharStatus, ParagraphChar, State, Window, WindowCommand,
 };
@@ -92,14 +95,51 @@ pub fn practice_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>
         let layout = Layout::default()
             .vertical_margin(f.size().height / 4)
             .horizontal_margin(f.size().width / 3)
-            .constraints([Constraint::Percentage(1)].as_ref())
+            .constraints([
+                Constraint::Percentage(50), //Paragraph space
+                Constraint::Percentage(10), //Live statistics space
+                Constraint::Percentage(40), //Paragraph information
+            ].as_ref())
             .split(f.size());
+        let statistics = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage(50),                    
+                Constraint::Percentage(50),                   
+            ].as_ref())
+            .split(layout[1]);
+        let progress_info = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
+            ].as_ref())
+            .split(layout[2]);
 
-        let title = Paragraph::new(vec![Spans::from(spans)])
+        let paragraph = Paragraph::new(vec![Spans::from(spans)])
             .alignment(Alignment::Center)
             .wrap(Wrap { trim: false });
+        f.render_widget(paragraph, layout[0]);
+        
+        let time_elapsed = Utc::now() - state.initial_time;
+        let wpm = state.word_count as f64 / (time_elapsed.num_milliseconds() as f64 / 1000.0 / 60.0);
+        let formatted_wpm = format!("{:.2}", wpm);
+        let wpm_widget = create_label_widget("WPM: ", &formatted_wpm, Color::Yellow);
+        f.render_widget(wpm_widget, statistics[0]);
 
-        f.render_widget(title, layout[0]);
+        let accuracy = (state.chars.len() - state.total_error_count) as f64 / state.chars.len() as f64 * 100.0;
+        let formatted_accuracy = format!("{:.2} %", accuracy);
+        let accuracy_widget = create_label_widget("Accuracy: ", &formatted_accuracy, Color::Yellow);
+        f.render_widget(accuracy_widget, statistics[1]);
+
+        let progress = state.index as f64/ state.chars.len() as f64 * 100.0;
+        let progress_widget = Gauge::default()
+            .block(Block::default().borders(Borders::TOP).title("You").border_style(Style::default().fg(Color::DarkGray)))
+            .gauge_style(Style::default().fg(Color::LightCyan).bg(Color::Black).add_modifier(Modifier::ITALIC))
+            .percent(progress as u16);
+        f.render_widget(progress_widget, progress_info[0]);
     })
 }
 fn create_empty_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
@@ -243,78 +283,67 @@ fn add_to_commands<B: 'static + Backend>(
 
 fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
     Box::new(move |f| {
-        let accuracy =
-            (state.chars.len() - state.total_error_count) as f64 / state.chars.len() as f64;
+        let accuracy = (state.chars.len() - state.total_error_count) as f64 / state.chars.len() as f64;
+        let formatted_accuracy = format!("{:.2} %", accuracy*100.0);
         let duration = state.end_time - state.initial_time;
         let seconds = (duration.num_milliseconds() as f64) / 1000.0;
+        let formatted_seconds = format!("{:.2}", seconds);
 
         let word_count = state.word_count as f64;
         let wpm = word_count / seconds * 60.0;
+        let formatted_wpm = format!("{:.2}", wpm);
+        
+        let total_points = (wpm + accuracy * wpm) / 2.0;
+        let formatted_total_points = format!("{:.2}", total_points);
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(
                 [
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
+                    Constraint::Percentage(10),
+                    Constraint::Percentage(80),
+                    Constraint::Percentage(10),
                 ]
                 .as_ref(),
             )
             .margin(10)
             .split(f.size());
+        
+        let control_buttons = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
+                Constraint::Percentage(20),
+            ].as_ref())
+            .split(layout[2]);
 
         let title_paragraph = Paragraph::new("Thank you for playing!").alignment(Alignment::Center);
         f.render_widget(title_paragraph, layout[0]);
 
-        let words_per_minute = Paragraph::new(Spans::from(vec![
-            Span::from("WPM: "),
-            Span::styled(
-                format!("{:.2}", wpm),
-                Style::default()
-                    .fg(Color::LightCyan)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]))
-        .alignment(Alignment::Center);
-        f.render_widget(words_per_minute, layout[1]);
+        let table = Table::new(vec![
+                Row::new(vec!["#", "Name", "Points", "Time (s)", "Accuracy", "WPM"]).style(Style::default().fg(Color::LightCyan).add_modifier(Modifier::BOLD)),
+                Row::new(vec!["1", "You", &formatted_total_points, &formatted_seconds, &formatted_accuracy, &formatted_wpm]),
+            ]).block(Block::default().borders(Borders::LEFT|Borders::RIGHT))
+            .widths([
+                Constraint::Percentage(5),
+                Constraint::Percentage(35),
+                Constraint::Percentage(15),
+                Constraint::Percentage(15),
+                Constraint::Percentage(15),
+                Constraint::Percentage(15),
+            ].as_ref())
+            .column_spacing(1);
+        f.render_widget(table, layout[1]);
 
-        let word_count_container = Paragraph::new(Spans::from(vec![
-            Span::from("Word Count: "),
-            Span::styled(
-                format!("{:.2}", state.word_count),
-                Style::default()
-                    .fg(Color::LightCyan)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]))
-        .alignment(Alignment::Center);
-        f.render_widget(word_count_container, layout[2]);
-
-        let time_container = Paragraph::new(Spans::from(vec![
-            Span::from("Time: "),
-            Span::styled(
-                format!("{} s", seconds),
-                Style::default()
-                    .fg(Color::LightCyan)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]))
-        .alignment(Alignment::Center);
-        f.render_widget(time_container, layout[3]);
-
-        let accuracy_container = Paragraph::new(Spans::from(vec![
-            Span::from("Accuracy: "),
-            Span::styled(
-                format!("{:.2}%", accuracy * 100.0),
-                Style::default()
-                    .fg(Color::LightCyan)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]))
-        .alignment(Alignment::Center);
-        f.render_widget(accuracy_container, layout[4]);
+        let reset_button = create_ui_button("R", "eset");
+        f.render_widget(reset_button, control_buttons[0]);
+        let quit_button = create_ui_button("M", "enu");
+        f.render_widget(quit_button, control_buttons[1]);
+        let statistics_button = create_ui_button("E", "xit");
+        f.render_widget(statistics_button, control_buttons[2]);
+        let statistics_button = create_ui_button("S", "tatistics");
+        f.render_widget(statistics_button, control_buttons[3]);
     })
 }
 
@@ -337,8 +366,17 @@ fn create_end_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
                 KeyCode::Char('r'),
                 WindowCommand::new_char_command('r', Box::new(create_empty_practice_window)),
             ),
+            (
+                KeyCode::Char('m'),
+                WindowCommand::new_char_command('m', Box::new(create_main_menu_window))
+            )
+            //TODO: Implement the statistics command
         ]),
     })
+}
+
+fn create_label_widget<'a>(label: &'a str, value: &'a str, color: Color) -> Paragraph<'a> {
+    Paragraph::new(vec![Spans::from(vec![Span::from(label), Span::styled(value, Style::default().fg(color))])]).alignment(Alignment::Center)
 }
 
 fn create_ui_button<'a>(activator: &'a str, rest: &'a str) -> Paragraph<'a> {
