@@ -1,8 +1,8 @@
-use std::path::Path;
-use std::path::PathBuf;
 use chrono::prelude::*;
 use crossterm::event::KeyCode;
 use serde_derive::{Deserialize, Serialize};
+use std::path::Path;
+use std::path::PathBuf;
 use std::{collections::HashMap, rc::Rc};
 use tui::{
     backend::Backend,
@@ -17,33 +17,33 @@ pub mod windows;
 pub struct TraceRun {
     wpm: f64,
     accuracy: f64,
-    total_points: f64
+    total_points: f64,
+    seconds: f64,
 }
 
 impl TraceRun {
-    pub fn new(wpm: f64, accuracy: f64, total_points: f64) -> TraceRun {
-        TraceRun {
-            wpm,
-            accuracy,
-            total_points
-        }
+    pub fn to_csv(&self) -> String {
+        format!(
+            "{:},{:},{:},{:}",
+            self.wpm, self.accuracy, self.total_points, self.seconds
+        )
     }
 }
 
 pub fn save_track_record(runs: &Vec<TraceRun>) -> Result<(), std::io::Error> {
-    let path = get_app_path(".track_record.json");
+    let path = get_app_path(".runs.json");
     let json = serde_json::to_string(&runs)?;
     std::fs::write(path, json)
 }
 
 pub fn get_track_record() -> Vec<TraceRun> {
-    let path = get_app_path(".track_record.json");
+    let path = get_app_path(".runs.json");
     match std::fs::read(path) {
         Ok(bytes) => match serde_json::from_slice(&bytes) {
             Ok(runs) => runs,
-            Err(_) => Vec::new()
+            Err(_) => Vec::new(),
         },
-        Err(_) => Vec::new()
+        Err(_) => Vec::new(),
     }
 }
 
@@ -157,6 +157,20 @@ impl State {
         self.word_count = 0;
         self.index = 0;
     }
+    pub fn create_run(&self) -> TraceRun {
+        let accuracy = (self.chars.len() - self.total_error_count) as f64 / self.chars.len() as f64;
+        let duration = self.end_time - self.initial_time;
+        let seconds = (duration.num_milliseconds() as f64) / 1000.0;
+
+        let wpm = self.word_count as f64 / seconds * 60.0;
+        let total_points = (wpm + accuracy * wpm) / 2.0;
+        TraceRun {
+            wpm,
+            accuracy,
+            total_points,
+            seconds,
+        }
+    }
 }
 
 pub struct WindowCommand<B: Backend> {
@@ -210,9 +224,8 @@ pub fn generate_all_chars() -> Vec<char> {
 }
 
 pub fn add_to_commands<B: 'static + Backend>(
-    commands: &mut HashMap<KeyCode, WindowCommand<B>>,
-    char_array: &Vec<char>,
-    cmd: Box<dyn Fn(char)-> Box<dyn Fn(&mut State) -> Option<Window<B>>>>
+    commands: &mut HashMap<KeyCode, WindowCommand<B>>, char_array: &Vec<char>,
+    cmd: Box<dyn Fn(char) -> Box<dyn Fn(&mut State) -> Option<Window<B>>>>,
 ) {
     for elem in char_array {
         commands.insert(
