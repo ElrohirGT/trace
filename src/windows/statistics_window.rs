@@ -91,6 +91,7 @@ fn construct_bar_charts<B: Backend>(f: &mut Frame<B>, point_series: &[(f64, f64)
         let transformed_series: Vec<(String, u64)> = series[i]
             .into_iter()
             .map(|v| (v.0.to_string(), v.1 as u64))
+            .rev()
             .collect();
         let result: Vec<(&str, u64)> = transformed_series
             .iter()
