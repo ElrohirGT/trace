@@ -58,6 +58,7 @@ fn construct_line_chart<B: Backend>(f: &mut Frame<B>, point_series: &[(f64, f64)
                 )
                 .y_axis(
                     Axis::default()
+                        .title(Span::styled("Press [TAB] to change", Style::default().fg(Color::LightRed).add_modifier(Modifier::BOLD)))
                         .bounds([0.0, 150.0])
                         .labels((0..151).filter_map(|n: u8| if n%10 == 0 {Some(Span::from(n.to_string()))} else {None}).collect())
                 );
