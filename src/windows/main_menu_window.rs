@@ -86,6 +86,10 @@ pub fn create_main_menu_window<B: 'static + Backend>(state: &mut State) -> Optio
                 KeyCode::Char('P'),
                 WindowCommand::new_char_command('P', Box::new(create_empty_practice_window)),
             ),
+            (
+                KeyCode::Char('s'),
+                WindowCommand::new_char_command('s', Box::new(create_statistics_window))
+            )
         ]),
     })
 }

@@ -30,18 +30,17 @@ impl TraceRun {
     }
 }
 
-pub fn save_track_record(runs: &Vec<TraceRun>) -> Result<(), std::io::Error> {
-    let path = get_app_path(".runs.json");
-    let json = serde_json::to_string(&runs)?;
-    std::fs::write(path, json)
-}
-
 pub fn get_track_record() -> Vec<TraceRun> {
-    let path = get_app_path(".runs.json");
-    match std::fs::read(path) {
-        Ok(bytes) => match serde_json::from_slice(&bytes) {
-            Ok(runs) => runs,
-            Err(_) => Vec::new(),
+    let path = get_app_path(".runs.csv");
+    match csv::Reader::from_path(path) {
+        Ok(mut reader) => {
+            let mut records = vec![];
+            for result in reader.deserialize() {
+                if let Ok(record) = result {
+                    records.push(record)
+                }
+            }
+            records
         },
         Err(_) => Vec::new(),
     }
@@ -124,6 +123,7 @@ pub fn convert_string_to_chars(s: String) -> Vec<ParagraphChar> {
 pub struct State {
     user_name: String,
     chars: Vec<ParagraphChar>,
+    show_bar_charts: bool,
     paragraph: AppParagraph,
     initial_time: DateTime<Utc>,
     end_time: DateTime<Utc>,
@@ -141,6 +141,7 @@ impl State {
             paragraph: AppParagraph::new(),
             initial_time: Utc::now(),
             end_time: Utc::now(),
+            show_bar_charts: false,
             current_error_count: 0,
             total_error_count: 0,
             word_count: 0,
@@ -152,6 +153,7 @@ impl State {
         self.paragraph = AppParagraph::new();
         self.initial_time = Utc::now();
         self.end_time = Utc::now();
+        self.show_bar_charts = false;
         self.current_error_count = 0;
         self.total_error_count = 0;
         self.word_count = 0;

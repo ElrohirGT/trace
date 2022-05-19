@@ -172,7 +172,11 @@ pub fn create_end_window<B: 'static + Backend>(state: &mut State) -> Option<Wind
             (
                 KeyCode::Char('m'),
                 WindowCommand::new_char_command('m', Box::new(create_main_menu_window)),
-            ), //TODO: Implement the statistics command
+            ),
+            (
+                KeyCode::Char('s'),
+                WindowCommand::new_char_command('s', Box::new(create_statistics_window))
+            )
         ]),
     })
 }
