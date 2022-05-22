@@ -140,12 +140,13 @@ pub fn create_end_window<B: 'static + Backend>(state: &mut State) -> Option<Wind
     {
         Ok(f) => f,
         Err(_) => {
-            std::fs::write(&path, "wpm,accuracy,total_points,seconds").unwrap();
-            std::fs::OpenOptions::new()
+            let mut file = std::fs::OpenOptions::new()
                 .write(true)
                 .create(true)
                 .open(&path)
-                .unwrap()
+                .unwrap();
+            file.write("wpm,accuracy,total_points,seconds".as_bytes());
+            file
         }
     };
     file.write(csv.as_bytes());
