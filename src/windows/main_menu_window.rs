@@ -31,6 +31,7 @@ pub fn main_menu_window<B: Backend>(_: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> 
                     Constraint::Percentage(33),
                     Constraint::Percentage(20),
                     Constraint::Percentage(20),
+                    Constraint::Percentage(20),
                     Constraint::Percentage(1),
                 ]
                 .as_ref(),
@@ -45,8 +46,11 @@ pub fn main_menu_window<B: Backend>(_: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> 
         let practice_button = create_ui_button("P", "ractice");
         f.render_widget(practice_button, chunks[1]);
 
+        let practice_button = create_ui_button("S", "tatistics");
+        f.render_widget(practice_button, chunks[2]);
+
         let exit_button = create_ui_button("E", "xit");
-        f.render_widget(exit_button, chunks[2]);
+        f.render_widget(exit_button, chunks[3]);
     })
 }
 

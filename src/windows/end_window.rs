@@ -132,7 +132,7 @@ fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
 pub fn create_end_window<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
     let run = state.create_run();
     let path = get_app_path(".runs.csv");
-    let csv = run.to_csv();
+    let csv = format!("\n{}", run.to_csv());
     let mut file = match std::fs::OpenOptions::new()
         .write(true)
         .append(true)
@@ -145,7 +145,7 @@ pub fn create_end_window<B: 'static + Backend>(state: &mut State) -> Option<Wind
                 .create(true)
                 .open(&path)
                 .unwrap();
-            file.write("wpm,accuracy,total_points,seconds\n".as_bytes());
+            file.write("wpm,accuracy,total_points,seconds".as_bytes());
             file
         }
     };
