@@ -145,7 +145,7 @@ pub fn create_end_window<B: 'static + Backend>(state: &mut State) -> Option<Wind
                 .create(true)
                 .open(&path)
                 .unwrap();
-            file.write("wpm,accuracy,total_points,seconds".as_bytes());
+            file.write("wpm,accuracy,total_points,seconds\n".as_bytes());
             file
         }
     };
