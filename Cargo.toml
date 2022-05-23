@@ -7,7 +7,7 @@ repository = "https://github.com/ElrohirGT/trace"
 license = "GPL-3.0"
 keywords = ["terminal", "game", "type"]
 categories = ["command-line-utilities"]
-include = ["database.csv"]
+include = ["database.csv", "/src"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,7 +15,6 @@ include = ["database.csv"]
 name = "trace-game"
 test = false
 bench = false
-path = "src/main.rs"
 
 [dependencies]
 tui = "0.18.0"
