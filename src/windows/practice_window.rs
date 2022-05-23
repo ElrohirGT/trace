@@ -89,13 +89,26 @@ pub fn create_empty_practice_window<B: 'static + Backend>(state: &mut State) -> 
 }
 fn get_random_app_paragraph() -> AppParagraph {
     let current_dir = std::env::current_dir().unwrap();
-    let path = Path::new(&current_dir).join("database.json");
-    let json = fs::read_to_string(path).expect("");
-    let paragraphs: Vec<AppParagraph> = match serde_json::from_str(&json) {
+    let path = Path::new(&current_dir).join("database.csv");
+    let random_par = csv::Reader::from_path(&path).and_then(
+        |mut reader| {
+            let mut records: Vec<AppParagraph> = vec![];
+            for result in reader.deserialize() {
+                match result {
+                    Ok(r) => records.push(r),
+                    Err(r) => return Err(r)
+                }
+            }
+            Ok(records)
+        }
+    ).and_then(|paragraphs: Vec<AppParagraph>|{
+        let random_par = paragraphs.choose(&mut rand::thread_rng());
+        Ok(random_par.expect("Couldn't get a random paragraph!").clone())
+    });
+    match random_par {
         Ok(p) => p,
-        Err(why) => panic!("{:?}", why),
-    };
-    return paragraphs.choose(&mut rand::thread_rng()).unwrap().clone();
+        Err(why) => panic!("{}", why)
+    }
 }
 fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
