@@ -28,7 +28,7 @@ pub fn main_menu_window<B: Backend>(_: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> 
             .horizontal_margin(form_size.width / 3)
             .constraints(
                 [
-                    Constraint::Percentage(33),
+                    Constraint::Percentage(30),
                     Constraint::Percentage(20),
                     Constraint::Percentage(20),
                     Constraint::Percentage(20),
