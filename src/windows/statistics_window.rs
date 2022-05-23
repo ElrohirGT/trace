@@ -59,6 +59,12 @@ fn construct_line_chart<B: Backend>(
         }
     };
 
+    let max_bound = std::cmp::max(1, raw_data_length - 1);
+    let labels = if raw_data_length == 1 {
+        vec![Span::from("0"), Span::from("1")]
+    } else {
+        (0..raw_data_length).filter_map(filter).collect()
+    };
     let chart = Chart::new(datasets)
         .block(
             Block::default()
@@ -73,8 +79,8 @@ fn construct_line_chart<B: Backend>(
                         .fg(Color::LightRed)
                         .add_modifier(Modifier::BOLD),
                 ))
-                .bounds([0.0, raw_data_length as f64 - 1.0])
-                .labels((0..raw_data_length).filter_map(filter).collect()),
+                .bounds([0.0, max_bound as f64])
+                .labels(labels),
         )
         .y_axis(
             Axis::default()
