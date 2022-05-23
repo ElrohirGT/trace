@@ -41,7 +41,7 @@ pub fn get_track_record() -> Vec<TraceRun> {
                 }
             }
             records
-        },
+        }
         Err(_) => Vec::new(),
     }
 }

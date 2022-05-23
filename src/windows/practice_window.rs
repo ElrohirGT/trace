@@ -93,9 +93,9 @@ fn get_random_app_paragraph() -> AppParagraph {
     let current_dir = std::env::current_dir().unwrap();
     let path = Path::new(&current_dir).join("database.json");
     let json = fs::read_to_string(path).expect("");
-    let paragraphs: Vec<AppParagraph> =  match serde_json::from_str(&json){
+    let paragraphs: Vec<AppParagraph> = match serde_json::from_str(&json) {
         Ok(p) => p,
-        Err(why) => panic!("{:?}", why)
+        Err(why) => panic!("{:?}", why),
     };
     return paragraphs.choose(&mut rand::thread_rng()).unwrap().clone();
 }
