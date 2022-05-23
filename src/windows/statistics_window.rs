@@ -73,7 +73,7 @@ fn construct_line_chart<B: Backend>(
                         .fg(Color::LightRed)
                         .add_modifier(Modifier::BOLD),
                 ))
-                .bounds([0.0, raw_data_length as f64])
+                .bounds([0.0, raw_data_length as f64 - 1.0])
                 .labels((0..raw_data_length).filter_map(filter).collect()),
         )
         .y_axis(
