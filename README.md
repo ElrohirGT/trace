@@ -1,6 +1,9 @@
-# TRace
+# TRace Game
 A simple typing TUI racer with the main focus being the spanish language.
 ![TRace Demo](./readme-assets/TRaceDemo.gif)
+
+## Installation
+You can install it with `cargo install trace-game`. You'll need to download the [database.csv file](database.csv) for the default runs. If you want to add runs or create your own database.csv file you can! Just run the program from another directory where the database.csv is and you're good to go. All data is stored in a `.user` and `.runs.csv` file that will appear next to the `database.csv` file.
 
 ## Features
 - Statistics
@@ -19,4 +22,5 @@ A simple typing TUI racer with the main focus being the spanish language.
 
 ## Roadmap
 - The bar chart currently only shows the quantity that fits the screen. There should be a command to navigate through records.
+- Probably make the installation process a little easier.
 - I plan to add local multiplayer but this will take a while.

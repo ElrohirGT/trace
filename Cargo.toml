@@ -1,6 +1,6 @@
 [package]
 name = "trace-game"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 description = "A terminal typing game written in rust, local multiplayer support planned"
 repository = "https://github.com/ElrohirGT/trace"

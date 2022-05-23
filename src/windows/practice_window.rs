@@ -1,3 +1,4 @@
+use crate::get_app_path;
 use crate::add_to_commands;
 use crate::generate_all_chars;
 use crate::{
@@ -88,8 +89,7 @@ pub fn create_empty_practice_window<B: 'static + Backend>(state: &mut State) -> 
     create_practice_window(state)
 }
 fn get_random_app_paragraph() -> AppParagraph {
-    let current_dir = std::env::current_dir().unwrap();
-    let path = Path::new(&current_dir).join("database.csv");
+    let path = get_app_path("database.csv");
     let random_par = csv::Reader::from_path(&path)
         .and_then(|mut reader| {
             let mut records: Vec<AppParagraph> = vec![];

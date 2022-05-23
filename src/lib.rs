@@ -197,10 +197,7 @@ pub struct Window<B: Backend> {
 }
 
 pub fn get_app_path(file_path: &str) -> PathBuf {
-    let mut current_dir = std::env::current_exe().unwrap();
-    current_dir.pop();
-    current_dir.pop();
-    current_dir.pop();
+    let mut current_dir = std::env::current_dir().unwrap();
     Path::new(&current_dir).join(file_path)
 }
 
