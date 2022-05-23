@@ -15,6 +15,7 @@ include = ["database.csv"]
 name = "trace-game"
 test = false
 bench = false
+path = "src/main.rs"
 
 [dependencies]
 tui = "0.18.0"
