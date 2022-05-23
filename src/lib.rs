@@ -1,6 +1,6 @@
 use chrono::prelude::*;
 use crossterm::event::KeyCode;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::path::PathBuf;
 use std::{collections::HashMap, rc::Rc};
