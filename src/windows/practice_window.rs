@@ -17,7 +17,7 @@ pub fn practice_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>
     Box::new(move |f| {
         let spans: Vec<Span> = state.chars.iter().map(|c| c.to_span()).collect();
         let layout = Layout::default()
-            .vertical_margin(f.size().height / 4)
+            .vertical_margin(f.size().height / 5)
             .horizontal_margin(f.size().width / 3)
             .constraints(
                 [
@@ -36,10 +36,8 @@ pub fn practice_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>
             .direction(Direction::Vertical)
             .constraints(
                 [
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
+                    Constraint::Percentage(20), //First player progress bar
+                    Constraint::Percentage(1),
                 ]
                 .as_ref(),
             )
