@@ -1,5 +1,5 @@
 [package]
-name = "trace"
+name = "trace-game"
 version = "1.0.0"
 edition = "2021"
 description = "A terminal typing game written in rust, local multiplayer support planned"
@@ -11,7 +11,7 @@ categories = ["command-line-utilities"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "trace"
+name = "trace-game"
 test = false
 bench = false
 
