@@ -2,6 +2,11 @@
 name = "trace"
 version = "1.0.0"
 edition = "2021"
+description = "A terminal typing game written in rust, local multiplayer support planned"
+repository = "https://github.com/ElrohirGT/trace"
+license = "GPL-3.0"
+keywords = ["terminal", "game", "type"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
