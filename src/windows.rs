@@ -40,11 +40,21 @@ pub use join_server_window::*;
 pub fn create_menu<'a, B: Backend>(
     f: &mut Frame<B>, container: Rect, title: &str, buttons: Vec<(&'a str, &'a str)>,
 ) {
-    create_menu_pad(f, container, title, buttons, Padding { width: container.width / 3, height: container.height / 10 });
+    create_menu_pad(
+        f,
+        container,
+        title,
+        buttons,
+        Padding {
+            width: container.width / 3,
+            height: container.height / 10,
+        },
+    );
 }
 
 pub fn create_menu_pad<'a, B: Backend>(
-    f: &mut Frame<B>, container: Rect, title: &str, buttons: Vec<(&'a str, &'a str)>, padding: Padding
+    f: &mut Frame<B>, container: Rect, title: &str, buttons: Vec<(&'a str, &'a str)>,
+    padding: Padding,
 ) {
     let main_block = Block::default().borders(Borders::ALL);
     f.render_widget(main_block, container);
@@ -74,14 +84,17 @@ pub fn create_menu_pad<'a, B: Backend>(
         .horizontal_margin(padding.width)
         .constraints(constraints)
         .split(container);
-    
-    let vcentered_chunks: Vec<Rect> = chunks.iter().map(|&c| {
-        Layout::default()
-            .direction(Direction::Vertical)
-            .vertical_margin(c.height/2)
-            .constraints([Constraint::Percentage(1)])
-            .split(c)[0]
-    }).collect();
+
+    let vcentered_chunks: Vec<Rect> = chunks
+        .iter()
+        .map(|&c| {
+            Layout::default()
+                .direction(Direction::Vertical)
+                .vertical_margin(c.height / 2)
+                .constraints([Constraint::Percentage(1)])
+                .split(c)[0]
+        })
+        .collect();
 
     f.render_widget(pars[0].clone(), chunks[0]);
     for i in 1..pars.len() {
@@ -110,6 +123,5 @@ pub fn create_ui_button<'a>(activator: &'a str, rest: &'a str) -> Paragraph<'a> 
         Span::raw(rest),
     ])];
 
-    Paragraph::new(button_text)
-        .alignment(Alignment::Center)
+    Paragraph::new(button_text).alignment(Alignment::Center)
 }

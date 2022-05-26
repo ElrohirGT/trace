@@ -15,7 +15,7 @@ pub mod windows;
 
 pub struct Padding {
     width: u16,
-    height: u16
+    height: u16,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
