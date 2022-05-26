@@ -19,13 +19,13 @@ use tui::Frame;
 
 fn user_window<B: 'static + Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
     Box::new(move |f| {
-        let paragraph = Paragraph::new(vec![Spans::from(vec![
-            Span::from("Please write your username:\n"),
-            Span::styled(
-                state.user_name.to_string(),
+        let paragraph = Paragraph::new(vec![
+            Spans::from("Please write your username:"),
+            Spans::from(vec![Span::styled(
+                state.user_name.clone(),
                 Style::default().fg(Color::Yellow),
-            ),
-        ])])
+            )]),
+        ])
         .alignment(Alignment::Center);
         f.render_widget(paragraph, f.size());
     })
