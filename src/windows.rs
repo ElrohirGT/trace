@@ -31,6 +31,12 @@ pub use statistics_window::*;
 pub mod multiplayer_menu_window;
 pub use multiplayer_menu_window::*;
 
+pub mod create_server_window;
+pub use create_server_window::*;
+
+pub mod join_server_window;
+pub use join_server_window::*;
+
 pub fn create_menu<'a, B: Backend>(
     f: &mut Frame<B>, container: Rect, title: &str, buttons: Vec<(&'a str, &'a str)>,
 ) {

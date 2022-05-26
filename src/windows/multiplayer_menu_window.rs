@@ -77,6 +77,14 @@ pub fn create_multiplayer_menu_window<B: 'static + Backend>(_: &mut State) -> Op
                 activator_key: KeyCode::Esc,
                 action: Box::new(create_main_menu_window),
             },
+        ),
+        (
+            KeyCode::Char('n'),
+            WindowCommand::new_char_command('n', Box::new(create_mp_create_server_window))
+        ),
+        (
+            KeyCode::Char('j'),
+            WindowCommand::new_char_command('j', Box::new(create_mp_join_server_window))
         )]),
     })
 }
