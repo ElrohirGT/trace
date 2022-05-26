@@ -3,54 +3,26 @@ use crate::{get_app_path, State, Window, WindowCommand};
 use crossterm::event::KeyCode;
 
 use std::{collections::HashMap, rc::Rc};
-use tui::{
-    backend::Backend, layout::Alignment, layout::Constraint, layout::Direction, layout::Layout,
-    style::Color, style::Modifier, style::Style, text::Text, widgets::Block, widgets::Borders,
-    widgets::Paragraph, Frame,
-};
+use tui::{backend::Backend, layout::Constraint, layout::Layout, Frame};
 
 pub fn main_menu_window<B: Backend>(_: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
     Box::new(|f| {
         let game_title = "▀█▀ █▀█ ▄▀█ █▀▀ █▀▀\n░█░ █▀▄ █▀█ █▄▄ ██▄";
 
-        let mut form_size = f.size();
-        form_size.x = form_size.width / 4;
-        form_size.y = form_size.height / 4;
-        form_size.width /= 2;
-        form_size.height /= 2;
+        let container = Layout::default()
+            .horizontal_margin(f.size().width / 4)
+            .vertical_margin(f.size().height / 4)
+            .constraints([Constraint::Percentage(1)].as_ref())
+            .split(f.size());
 
-        let main_block = Block::default().borders(Borders::ALL);
-        f.render_widget(main_block, form_size);
+        let buttons = vec![
+            ("P", "ractice"),
+            ("S", "tatistics"),
+            ("M", "ultiplayer"),
+            ("E", "xit"),
+        ];
 
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .vertical_margin(form_size.height / 8)
-            .horizontal_margin(form_size.width / 3)
-            .constraints(
-                [
-                    Constraint::Percentage(30),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(20),
-                    Constraint::Percentage(1),
-                ]
-                .as_ref(),
-            )
-            .split(form_size);
-        let title = Paragraph::new(Text::styled(
-            game_title,
-            Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
-        ))
-        .alignment(Alignment::Center);
-        f.render_widget(title, chunks[0]);
-        let practice_button = create_ui_button("P", "ractice");
-        f.render_widget(practice_button, chunks[1]);
-
-        let practice_button = create_ui_button("S", "tatistics");
-        f.render_widget(practice_button, chunks[2]);
-
-        let exit_button = create_ui_button("E", "xit");
-        f.render_widget(exit_button, chunks[3]);
+        create_menu(f, container[0], game_title, buttons);
     })
 }
 
@@ -93,6 +65,18 @@ pub fn create_main_menu_window<B: 'static + Backend>(state: &mut State) -> Optio
             (
                 KeyCode::Char('s'),
                 WindowCommand::new_char_command('s', Box::new(create_statistics_window)),
+            ),
+            (
+                KeyCode::Char('S'),
+                WindowCommand::new_char_command('S', Box::new(create_statistics_window)),
+            ),
+            (
+                KeyCode::Char('m'),
+                WindowCommand::new_char_command('m', Box::new(create_multiplayer_menu_window)),
+            ),
+            (
+                KeyCode::Char('M'),
+                WindowCommand::new_char_command('M', Box::new(create_multiplayer_menu_window)),
             ),
         ]),
     })

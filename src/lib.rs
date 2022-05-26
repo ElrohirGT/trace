@@ -13,6 +13,11 @@ use tui::{
 
 pub mod windows;
 
+pub struct Padding {
+    width: u16,
+    height: u16
+}
+
 #[derive(Deserialize, Serialize, Clone)]
 pub struct TraceRun {
     wpm: f64,
