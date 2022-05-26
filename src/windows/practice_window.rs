@@ -1,13 +1,13 @@
-use crate::get_app_path;
 use crate::add_to_commands;
 use crate::generate_all_chars;
+use crate::get_app_path;
 use crate::{
     convert_string_to_chars, windows::*, AppParagraph, CharStatus, ParagraphChar, State, Utc,
     Window, WindowCommand,
 };
 use crossterm::event::KeyCode;
 use rand::prelude::SliceRandom;
-use std::{collections::HashMap, path::Path, rc::Rc};
+use std::{collections::HashMap, rc::Rc};
 use tui::{
     backend::Backend, layout::Alignment, layout::Constraint, layout::Direction, layout::Layout,
     style::Color, style::Modifier, style::Style, text::Span, text::Spans, widgets::Block,
