@@ -22,7 +22,7 @@ fn user_window<B: 'static + Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<
         let paragraph = Paragraph::new(vec![
             Spans::from("Please write your username:"),
             Spans::from(vec![Span::styled(
-                state.user_name.clone(),
+                state.player.user_name.clone(),
                 Style::default().fg(Color::Yellow),
             )]),
         ])
@@ -35,7 +35,7 @@ fn handle_char_press<B: 'static + Backend>(
     c: char,
 ) -> Box<dyn Fn(&mut State) -> Option<Window<B>>> {
     Box::new(move |state: &mut State| {
-        state.user_name.push(c);
+        state.player.user_name.push(c);
         create_user_window(state)
     })
 }
@@ -46,7 +46,7 @@ pub fn create_user_window<B: 'static + Backend>(_: &mut State) -> Option<Window<
     add_to_commands(&mut commands, &chars, Box::new(handle_char_press));
 
     fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
-        state.user_name.pop();
+        state.player.user_name.pop();
         create_user_window(state)
     }
     commands.insert(
@@ -62,7 +62,7 @@ pub fn create_user_window<B: 'static + Backend>(_: &mut State) -> Option<Window<
             activator_key: KeyCode::Enter,
             action: Box::new(|state| {
                 let path = get_app_path(".user");
-                match std::fs::write(path, state.user_name.to_string()) {
+                match std::fs::write(path, state.player.user_name.to_string()) {
                     Ok(_) => create_main_menu_window(state),
                     Err(_) => create_user_window(state),
                 }

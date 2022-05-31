@@ -16,7 +16,7 @@ fn main() -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut state = Rc::new(State::new());
+    let mut state = Rc::new(State::default());
     let mut window = create_main_menu_window(Rc::make_mut(&mut state));
     loop {
         window = match window {

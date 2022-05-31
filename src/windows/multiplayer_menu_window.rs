@@ -8,8 +8,6 @@ use pnet::ipnetwork::IpNetwork;
 use std::collections::HashMap;
 use std::rc::Rc;
 use tui::backend::Backend;
-use tui::layout::Rect;
-use tui::widgets::Paragraph;
 use tui::Frame;
 
 fn multiplayer_menu_window<B: 'static + Backend>(_: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {

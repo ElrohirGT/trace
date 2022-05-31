@@ -2,7 +2,7 @@ use crate::add_to_commands;
 use crate::generate_all_chars;
 use crate::get_app_path;
 use crate::{
-    convert_string_to_chars, windows::*, AppParagraph, CharStatus, ParagraphChar, State, Utc,
+    windows::*, AppParagraph, CharStatus, ParagraphChar, State, Utc,
     Window, WindowCommand,
 };
 use crossterm::event::KeyCode;
@@ -49,25 +49,25 @@ pub fn practice_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>
             .wrap(Wrap { trim: false });
         f.render_widget(paragraph, layout[0]);
 
-        let time_elapsed = Utc::now() - state.initial_time;
-        let wpm =
-            state.word_count as f64 / (time_elapsed.num_milliseconds() as f64 / 1000.0 / 60.0);
+        let player_statistics = &state.player.statistics;
+        let time_elapsed = Utc::now() - player_statistics.initial_time;
+        let wpm = player_statistics.word_count as f64 / (time_elapsed.num_milliseconds() as f64 / 1000.0 / 60.0);
         let formatted_wpm = format!("{:.2}", wpm);
         let wpm_widget = create_label_widget("WPM: ", &formatted_wpm, Color::Yellow);
         f.render_widget(wpm_widget, statistics[0]);
 
         let accuracy =
-            (state.chars.len() - state.total_error_count) as f64 / state.chars.len() as f64 * 100.0;
+            (state.chars.len() - player_statistics.total_error_count) as f64 / state.chars.len() as f64 * 100.0;
         let formatted_accuracy = format!("{:.2} %", accuracy);
         let accuracy_widget = create_label_widget("Accuracy: ", &formatted_accuracy, Color::Yellow);
         f.render_widget(accuracy_widget, statistics[1]);
 
-        let progress = state.index as f64 / state.chars.len() as f64 * 100.0;
+        let progress = state.player.index as f64 / state.chars.len() as f64 * 100.0;
         let progress_widget = Gauge::default()
             .block(
                 Block::default()
                     .borders(Borders::TOP)
-                    .title(state.user_name.to_string())
+                    .title(state.player.user_name.to_string())
                     .border_style(Style::default().fg(Color::DarkGray)),
             )
             .gauge_style(
@@ -81,16 +81,18 @@ pub fn practice_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>
     })
 }
 pub fn create_empty_practice_window<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
-    state.reset();
-    state.paragraph = get_random_app_paragraph();
-    state.word_count = state.paragraph.content.split(' ').count();
-    state.chars = convert_string_to_chars(state.paragraph.content.to_string());
-    state.initial_time = Utc::now();
+    state.player.reset();
+    state.paragraph = match get_random_app_paragraph() {
+        Ok(p) => p,
+        Err(err) => return create_error_window(format!("Sorry an error ocurred while retrieving the database.csv\n{}", err), create_main_menu_window)
+    };
+    state.player.statistics.word_count = state.paragraph.get_word_count();
+    state.chars = state.paragraph.get_paragraph_chars();
     create_practice_window(state)
 }
-fn get_random_app_paragraph() -> AppParagraph {
+fn get_random_app_paragraph() -> Result<AppParagraph, csv::Error> {
     let path = get_app_path("database.csv");
-    let random_par = csv::Reader::from_path(&path)
+    csv::Reader::from_path(&path)
         .and_then(|mut reader| {
             let mut records: Vec<AppParagraph> = vec![];
             for result in reader.deserialize() {
@@ -106,33 +108,29 @@ fn get_random_app_paragraph() -> AppParagraph {
             Ok(random_par
                 .expect("Couldn't get a random paragraph!")
                 .clone())
-        });
-    match random_par {
-        Ok(p) => p,
-        Err(why) => panic!("{}", why),
-    }
+        })
 }
 fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
-        if state.index != state.chars.len() {
-            state.chars[state.index] =
-                ParagraphChar::new(state.chars[state.index].character, CharStatus::Default);
+        if state.player.index != state.chars.len() {
+            state.chars[state.player.index] =
+                ParagraphChar::new(state.chars[state.player.index].character, CharStatus::Default);
         }
-        if state.index > 0 {
+        if state.player.index > 0 {
             //Going back to the previous inputted char, because the current is not inputted.
-            state.index -= 1;
+            state.player.index -= 1;
         }
-        let current_char = &state.chars[state.index];
+        let current_char = &state.chars[state.player.index];
         let defaulted_char = match current_char.status {
             CharStatus::Current => ParagraphChar::new(current_char.character, CharStatus::Current),
             CharStatus::Correct => ParagraphChar::new(current_char.character, CharStatus::Current),
             CharStatus::Wrong => {
-                state.current_error_count -= 1;
+                state.player.statistics.current_error_count -= 1;
                 ParagraphChar::new(current_char.character, CharStatus::Current)
             }
             CharStatus::Default => ParagraphChar::new(current_char.character, CharStatus::Current),
         };
-        state.chars[state.index] = defaulted_char;
+        state.chars[state.player.index] = defaulted_char;
         create_practice_window(state)
     }
 
@@ -165,7 +163,7 @@ fn handle_char_press<B: 'static + Backend>(
     pressed_character: char,
 ) -> Box<dyn Fn(&mut State) -> Option<Window<B>>> {
     Box::new(move |state: &mut State| {
-        let current_char = &state.chars[state.index];
+        let current_char = &state.chars[state.player.index];
         let is_correct = current_char.character == pressed_character;
         let status = if is_correct {
             CharStatus::Correct
@@ -174,26 +172,26 @@ fn handle_char_press<B: 'static + Backend>(
         };
 
         let transformed_char = ParagraphChar::new(current_char.character, status);
-        state.chars[state.index] = transformed_char;
+        state.chars[state.player.index] = transformed_char;
 
-        state.index += 1;
+        state.player.index += 1;
 
         if !is_correct {
-            state.current_error_count += 1;
-            state.total_error_count += 1;
+            state.player.statistics.current_error_count += 1;
+            state.player.statistics.total_error_count += 1;
         }
 
-        let end_of_paragraph = state.index == state.chars.len();
+        let end_of_paragraph = state.player.index == state.chars.len();
 
-        if end_of_paragraph && state.current_error_count == 0 {
-            state.end_time = Utc::now();
+        if end_of_paragraph && state.player.statistics.current_error_count == 0 {
+            state.player.statistics.end_time = Utc::now();
             create_end_window(state)
         } else {
             if !end_of_paragraph {
-                let current_char = &state.chars[state.index];
+                let current_char = &state.chars[state.player.index];
                 let transformed_char =
                     ParagraphChar::new(current_char.character, CharStatus::Current);
-                state.chars[state.index] = transformed_char;
+                state.chars[state.player.index] = transformed_char;
             }
             create_practice_window(state)
         }

@@ -51,12 +51,12 @@ pub fn get_track_record() -> Vec<TraceRun> {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Default)]
 pub struct AppParagraph {
     content: String,
     title: String,
     author: String,
-    date: String,
+    date: String
 }
 
 impl AppParagraph {
@@ -67,6 +67,12 @@ impl AppParagraph {
             author: "".to_string(),
             date: "".to_string(),
         }
+    }
+    pub fn get_paragraph_chars(&self) -> Vec<ParagraphChar> {
+        self.content.chars().map(|c| ParagraphChar::new(c, CharStatus::Default)).collect()
+    }
+    pub fn get_word_count(&self) -> usize {
+        self.content.split(' ').count()
     }
 }
 
@@ -125,51 +131,61 @@ pub fn convert_string_to_chars(s: String) -> Vec<ParagraphChar> {
 }
 
 #[derive(Clone)]
-pub struct State {
-    user_name: String,
-    chars: Vec<ParagraphChar>,
-    show_bar_charts: bool,
-    paragraph: AppParagraph,
+pub struct PlayerStatistics {
     initial_time: DateTime<Utc>,
     end_time: DateTime<Utc>,
     current_error_count: usize,
     total_error_count: usize,
-    word_count: usize,
-    index: usize,
+    word_count: usize
+}
+
+impl Default for PlayerStatistics {
+    fn default() -> Self {
+        PlayerStatistics {
+            initial_time: Utc::now(),
+            end_time: Utc::now(),
+            current_error_count: 0,
+            total_error_count: 0,
+            word_count: 0
+        }
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct Player {
+    user_name: String,
+    statistics: PlayerStatistics,
+    index: usize
+}
+
+impl Player {
+    fn reset(&mut self) {
+        self.index = 0;
+        self.statistics = PlayerStatistics::default()
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct State {
+    player: Player,
+    oponents: Vec<Player>,
+    chars: Vec<ParagraphChar>,
+    show_bar_charts: bool,
+    paragraph: AppParagraph
 }
 
 impl State {
-    pub fn new() -> State {
-        State {
-            chars: vec![],
-            user_name: String::new(),
-            paragraph: AppParagraph::new(),
-            initial_time: Utc::now(),
-            end_time: Utc::now(),
-            show_bar_charts: false,
-            current_error_count: 0,
-            total_error_count: 0,
-            word_count: 0,
-            index: 0,
-        }
-    }
     pub fn reset(&mut self) {
         self.chars = vec![];
         self.paragraph = AppParagraph::new();
-        self.initial_time = Utc::now();
-        self.end_time = Utc::now();
         self.show_bar_charts = false;
-        self.current_error_count = 0;
-        self.total_error_count = 0;
-        self.word_count = 0;
-        self.index = 0;
     }
     pub fn create_run(&self) -> TraceRun {
-        let accuracy = (self.chars.len() - self.total_error_count) as f64 / self.chars.len() as f64;
-        let duration = self.end_time - self.initial_time;
+        let accuracy = (self.chars.len() - self.player.statistics.total_error_count) as f64 / self.chars.len() as f64;
+        let duration = self.player.statistics.end_time - self.player.statistics.initial_time;
         let seconds = (duration.num_milliseconds() as f64) / 1000.0;
 
-        let wpm = self.word_count as f64 / seconds * 60.0;
+        let wpm = self.player.statistics.word_count as f64 / seconds * 60.0;
         let total_points = (wpm + accuracy * wpm) / 2.0;
         TraceRun {
             wpm,
