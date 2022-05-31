@@ -37,7 +37,7 @@ pub fn create_main_menu_window<B: 'static + Backend>(state: &mut State) -> Optio
     };
     state.player.user_name = user_name;
     Some(Window {
-        ui: main_menu_window,
+        ui: Box::new(main_menu_window),
         commands: HashMap::from([
             (
                 KeyCode::Char('e'),

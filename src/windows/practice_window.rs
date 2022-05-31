@@ -2,8 +2,7 @@ use crate::add_to_commands;
 use crate::generate_all_chars;
 use crate::get_app_path;
 use crate::{
-    windows::*, AppParagraph, CharStatus, ParagraphChar, State, Utc,
-    Window, WindowCommand,
+    windows::*, AppParagraph, CharStatus, ParagraphChar, State, Utc, Window, WindowCommand,
 };
 use crossterm::event::KeyCode;
 use rand::prelude::SliceRandom;
@@ -51,13 +50,15 @@ pub fn practice_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>
 
         let player_statistics = &state.player.statistics;
         let time_elapsed = Utc::now() - player_statistics.initial_time;
-        let wpm = player_statistics.word_count as f64 / (time_elapsed.num_milliseconds() as f64 / 1000.0 / 60.0);
+        let wpm = player_statistics.word_count as f64
+            / (time_elapsed.num_milliseconds() as f64 / 1000.0 / 60.0);
         let formatted_wpm = format!("{:.2}", wpm);
         let wpm_widget = create_label_widget("WPM: ", &formatted_wpm, Color::Yellow);
         f.render_widget(wpm_widget, statistics[0]);
 
-        let accuracy =
-            (state.chars.len() - player_statistics.total_error_count) as f64 / state.chars.len() as f64 * 100.0;
+        let accuracy = (state.chars.len() - player_statistics.total_error_count) as f64
+            / state.chars.len() as f64
+            * 100.0;
         let formatted_accuracy = format!("{:.2} %", accuracy);
         let accuracy_widget = create_label_widget("Accuracy: ", &formatted_accuracy, Color::Yellow);
         f.render_widget(accuracy_widget, statistics[1]);
@@ -84,7 +85,15 @@ pub fn create_empty_practice_window<B: 'static + Backend>(state: &mut State) -> 
     state.player.reset();
     state.paragraph = match get_random_app_paragraph() {
         Ok(p) => p,
-        Err(err) => return create_error_window(format!("Sorry an error ocurred while retrieving the database.csv\n{}", err), create_main_menu_window)
+        Err(err) => {
+            return create_error_window(
+                format!(
+                    "Sorry an error ocurred while retrieving the database.csv\n{}",
+                    err
+                ),
+                create_main_menu_window,
+            )
+        }
     };
     state.player.statistics.word_count = state.paragraph.get_word_count();
     state.chars = state.paragraph.get_paragraph_chars();
@@ -113,8 +122,10 @@ fn get_random_app_paragraph() -> Result<AppParagraph, csv::Error> {
 fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     fn handle_backspace_press<B: 'static + Backend>(state: &mut State) -> Option<Window<B>> {
         if state.player.index != state.chars.len() {
-            state.chars[state.player.index] =
-                ParagraphChar::new(state.chars[state.player.index].character, CharStatus::Default);
+            state.chars[state.player.index] = ParagraphChar::new(
+                state.chars[state.player.index].character,
+                CharStatus::Default,
+            );
         }
         if state.player.index > 0 {
             //Going back to the previous inputted char, because the current is not inputted.
@@ -154,7 +165,7 @@ fn create_practice_window<B: 'static + Backend>(_: &mut State) -> Option<Window<
     let chars = generate_all_chars();
     add_to_commands(&mut commands, &chars, Box::new(handle_char_press));
     Some(Window {
-        ui: practice_window,
+        ui: Box::new(practice_window),
         commands,
     })
 }

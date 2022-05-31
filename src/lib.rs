@@ -56,7 +56,7 @@ pub struct AppParagraph {
     content: String,
     title: String,
     author: String,
-    date: String
+    date: String,
 }
 
 impl AppParagraph {
@@ -69,7 +69,10 @@ impl AppParagraph {
         }
     }
     pub fn get_paragraph_chars(&self) -> Vec<ParagraphChar> {
-        self.content.chars().map(|c| ParagraphChar::new(c, CharStatus::Default)).collect()
+        self.content
+            .chars()
+            .map(|c| ParagraphChar::new(c, CharStatus::Default))
+            .collect()
     }
     pub fn get_word_count(&self) -> usize {
         self.content.split(' ').count()
@@ -136,7 +139,7 @@ pub struct PlayerStatistics {
     end_time: DateTime<Utc>,
     current_error_count: usize,
     total_error_count: usize,
-    word_count: usize
+    word_count: usize,
 }
 
 impl Default for PlayerStatistics {
@@ -146,7 +149,7 @@ impl Default for PlayerStatistics {
             end_time: Utc::now(),
             current_error_count: 0,
             total_error_count: 0,
-            word_count: 0
+            word_count: 0,
         }
     }
 }
@@ -155,7 +158,7 @@ impl Default for PlayerStatistics {
 pub struct Player {
     user_name: String,
     statistics: PlayerStatistics,
-    index: usize
+    index: usize,
 }
 
 impl Player {
@@ -171,7 +174,7 @@ pub struct State {
     oponents: Vec<Player>,
     chars: Vec<ParagraphChar>,
     show_bar_charts: bool,
-    paragraph: AppParagraph
+    paragraph: AppParagraph,
 }
 
 impl State {
@@ -181,7 +184,8 @@ impl State {
         self.show_bar_charts = false;
     }
     pub fn create_run(&self) -> TraceRun {
-        let accuracy = (self.chars.len() - self.player.statistics.total_error_count) as f64 / self.chars.len() as f64;
+        let accuracy = (self.chars.len() - self.player.statistics.total_error_count) as f64
+            / self.chars.len() as f64;
         let duration = self.player.statistics.end_time - self.player.statistics.initial_time;
         let seconds = (duration.num_milliseconds() as f64) / 1000.0;
 
@@ -214,7 +218,7 @@ impl<B: Backend> WindowCommand<B> {
 
 pub struct Window<B: Backend> {
     pub commands: HashMap<KeyCode, WindowCommand<B>>,
-    pub ui: fn(Rc<State>) -> Box<dyn Fn(&mut Frame<B>)>,
+    pub ui: Box<dyn Fn(Rc<State>) -> Box<dyn Fn(&mut Frame<B>)>>,
 }
 
 pub fn get_app_path(file_path: &str) -> PathBuf {

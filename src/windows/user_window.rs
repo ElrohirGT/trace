@@ -71,7 +71,7 @@ pub fn create_user_window<B: 'static + Backend>(_: &mut State) -> Option<Window<
     );
 
     Some(Window {
-        ui: user_window,
+        ui: Box::new(user_window),
         commands,
     })
 }

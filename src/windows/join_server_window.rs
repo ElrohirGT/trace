@@ -14,7 +14,7 @@ fn mp_join_server_window<B: 'static + Backend>(_: Rc<State>) -> Box<dyn Fn(&mut 
 
 pub fn create_mp_join_server_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     Some(Window {
-        ui: mp_join_server_window,
+        ui: Box::new(mp_join_server_window),
         commands: HashMap::from([(
             KeyCode::Esc,
             WindowCommand {

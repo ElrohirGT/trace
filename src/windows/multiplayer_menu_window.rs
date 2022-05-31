@@ -27,7 +27,7 @@ fn multiplayer_menu_window<B: 'static + Backend>(_: Rc<State>) -> Box<dyn Fn(&mu
             height: container[0].height / 8,
         };
 
-        create_menu_pad(f, container[0], game_title, buttons, padding);
+        create_menu_with_pad(f, container[0], game_title, buttons, padding);
         // let ip_address = local_ip_address::local_ip().unwrap();
         // let network_interfaces = local_ip_address::list_afinet_netifas().unwrap();
 
@@ -67,7 +67,7 @@ fn multiplayer_menu_window<B: 'static + Backend>(_: Rc<State>) -> Box<dyn Fn(&mu
 
 pub fn create_multiplayer_menu_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     Some(Window {
-        ui: multiplayer_menu_window,
+        ui: Box::new(multiplayer_menu_window),
         commands: HashMap::from([
             (
                 KeyCode::Esc,

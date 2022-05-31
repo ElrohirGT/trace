@@ -153,7 +153,7 @@ pub fn create_end_window<B: 'static + Backend>(state: &mut State) -> Option<Wind
     file.flush();
 
     Some(Window {
-        ui: end_window,
+        ui: Box::new(end_window),
         commands: HashMap::from([
             (
                 KeyCode::Char('e'),

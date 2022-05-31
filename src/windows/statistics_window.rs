@@ -194,7 +194,7 @@ fn statistics_window<B: 'static + Backend>(state: Rc<State>) -> Box<dyn Fn(&mut 
 
 pub fn create_statistics_window<B: 'static + Backend>(_: &mut State) -> Option<Window<B>> {
     Some(Window {
-        ui: statistics_window,
+        ui: Box::new(statistics_window),
         commands: HashMap::from([
             (
                 KeyCode::Esc,

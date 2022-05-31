@@ -37,10 +37,13 @@ pub use create_server_window::*;
 pub mod join_server_window;
 pub use join_server_window::*;
 
+pub mod error_window;
+pub use error_window::*;
+
 pub fn create_menu<'a, B: Backend>(
     f: &mut Frame<B>, container: Rect, title: &str, buttons: Vec<(&'a str, &'a str)>,
 ) {
-    create_menu_pad(
+    create_menu_with_pad(
         f,
         container,
         title,
@@ -52,7 +55,7 @@ pub fn create_menu<'a, B: Backend>(
     );
 }
 
-pub fn create_menu_pad<'a, B: Backend>(
+pub fn create_menu_with_pad<'a, B: Backend>(
     f: &mut Frame<B>, container: Rect, title: &str, buttons: Vec<(&'a str, &'a str)>,
     padding: Padding,
 ) {
