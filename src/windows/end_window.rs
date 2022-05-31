@@ -31,15 +31,12 @@ fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
         let formatted_total_points = format!("{:.2}", total_points);
         let layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(
-                [
-                    Constraint::Percentage(35),
-                    Constraint::Percentage(50),
-                    Constraint::Percentage(5),
-                ]
-                .as_ref(),
-            )
-            .margin(10)
+            .margin(8)
+            .constraints([
+                Constraint::Percentage(35),
+                Constraint::Percentage(50),
+                Constraint::Percentage(5),
+            ])
             .split(f.size());
         let header_layout = Layout::default()
             .direction(Direction::Vertical)
@@ -65,6 +62,7 @@ fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
                     Constraint::Percentage(20),
                     Constraint::Percentage(20),
                     Constraint::Percentage(20),
+                    Constraint::Percentage(1)
                 ]
                 .as_ref(),
             )
@@ -118,14 +116,10 @@ fn end_window<B: Backend>(state: Rc<State>) -> Box<dyn Fn(&mut Frame<B>)> {
         .column_spacing(1);
         f.render_widget(table, layout[1]);
 
-        let reset_button = create_ui_button("R", "eset");
-        f.render_widget(reset_button, control_buttons[0]);
-        let quit_button = create_ui_button("M", "enu");
-        f.render_widget(quit_button, control_buttons[1]);
-        let statistics_button = create_ui_button("E", "xit");
-        f.render_widget(statistics_button, control_buttons[2]);
-        let statistics_button = create_ui_button("S", "tatistics");
-        f.render_widget(statistics_button, control_buttons[3]);
+        create_centered_button("R", "eset", control_buttons[0], f);
+        create_centered_button("M", "enu", control_buttons[1], f);
+        create_centered_button("S", "tatistics", control_buttons[2], f);
+        create_centered_button("E", "xit", control_buttons[3], f);
     })
 }
 

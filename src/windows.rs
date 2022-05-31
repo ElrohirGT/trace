@@ -74,12 +74,6 @@ pub fn create_menu_with_pad<'a, B: Backend>(
         Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
     ))
     .alignment(Alignment::Center);
-    let mut pars = vec![title_par];
-    let mut button_pars: Vec<Paragraph> = buttons
-        .iter()
-        .map(|(activator, rest)| create_ui_button(activator, rest))
-        .collect();
-    pars.append(&mut button_pars);
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -88,22 +82,9 @@ pub fn create_menu_with_pad<'a, B: Backend>(
         .constraints(constraints)
         .split(container);
 
-    let vcentered_chunks: Vec<Rect> = chunks
-        .iter()
-        .map(|&c| {
-            Layout::default()
-                .direction(Direction::Vertical)
-                .vertical_margin(c.height / 2)
-                .constraints([Constraint::Percentage(1)])
-                .split(c)[0]
-        })
-        .collect();
-
-    f.render_widget(pars[0].clone(), chunks[0]);
-    for i in 1..pars.len() {
-        let button_wrapper = Block::default().borders(Borders::ALL);
-        f.render_widget(button_wrapper, chunks[i]);
-        f.render_widget(pars[i].clone(), vcentered_chunks[i]);
+    f.render_widget(title_par, chunks[0]);
+    for i in 0..buttons.len() {
+        create_centered_button(buttons[i].0, buttons[i].1, chunks[i+1], f);
     }
 }
 
@@ -113,6 +94,18 @@ pub fn create_label_widget<'a>(label: &'a str, value: &'a str, color: Color) -> 
         Span::styled(value, Style::default().fg(color)),
     ])])
     .alignment(Alignment::Center)
+}
+
+pub fn create_centered_button<'a, B: Backend>(activator: &'a str, rest: &'a str, container: Rect, f: &mut Frame<B>) {
+    let text = create_ui_button(activator, rest);
+    let borders = Block::default().borders(Borders::ALL);
+    let layout = Layout::default()
+        .direction(Direction::Vertical)
+        .vertical_margin((container.height as f32 / 2.0) as u16)
+        .constraints([Constraint::Percentage(1)])
+        .split(container);
+    f.render_widget(borders, container);
+    f.render_widget(text, layout[0]);
 }
 
 pub fn create_ui_button<'a>(activator: &'a str, rest: &'a str) -> Paragraph<'a> {
